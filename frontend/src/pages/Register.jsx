@@ -1,4 +1,6 @@
 import { useState } from "react";
+import api from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
   const [form, setForm] = useState({
@@ -6,6 +8,17 @@ export default function Register() {
     email: "",
     password: "",
   });
+  const navigate = useNavigate();
+
+  const handleRegister = async () => {
+    try {
+      await api.post("/register", form);
+      alert("Registration successful");
+      navigate("/login");
+    } catch (error) {
+      alert("Error registering");
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -39,7 +52,10 @@ export default function Register() {
           }
         />
 
-        <button className="w-full bg-blue-600 text-white p-2 rounded">
+        <button
+          onClick={handleRegister}
+          className="w-full bg-blue-600 text-white p-2 rounded"
+        >
           Register
         </button>
       </div>
