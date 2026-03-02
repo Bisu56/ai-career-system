@@ -5,6 +5,7 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
 import ResumeUpload from "../pages/ResumeUpload";
+import ProtectedRoute from "./ProtectedRoute";
 
 export default function AppRoutes() {
   return (
@@ -34,8 +35,22 @@ export default function AppRoutes() {
             </MainLayout>
           }
         />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/upload" element={<ResumeUpload />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/upload"
+          element={
+            <ProtectedRoute>
+              <ResumeUpload />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
