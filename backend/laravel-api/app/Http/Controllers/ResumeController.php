@@ -49,4 +49,28 @@ class ResumeController extends Controller
 
         return response()->json($data);
     }
+
+    public function analyze(Request $request)
+    {
+        $request->validate([
+            'resume' => 'required|string',
+            'job' => 'required|string'
+        ]);
+
+        $resumeText = $request->input('resume');
+        $jobDescription = $request->input('job');
+
+        try {
+            $response = Http::timeout(30)->post('http://127.0.0.1:8001/analyze', [
+                'resume' => $resumeText,
+                'job' => $jobDescription
+            ]);
+
+            $data = $response->json();
+        } catch (Exception $e) {
+            $data = ['match_percentage' => 0];
+        }
+
+        return response()->json($data);
+    }
 }
