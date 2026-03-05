@@ -33,9 +33,11 @@ class ResumeController extends Controller
                 'job' => $jobDescription
             ]);
 
-            $match = $response->json()['match_percentage'] ?? 0;
+            $data = $response->json();
+            $match = $data['match_percentage'] ?? 0;
         } catch (Exception $e) {
             $match = 0;
+            $data = ['match_percentage' => 0];
         }
 
         $resume = Resume::create([
@@ -45,9 +47,6 @@ class ResumeController extends Controller
             'match_percentage' => $match
         ]);
 
-        return response()->json([
-            'message' => 'Resume uploaded successfully',
-            'match_percentage' => $match
-        ]);
+        return response()->json($data);
     }
 }
