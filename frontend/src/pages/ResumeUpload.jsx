@@ -4,6 +4,7 @@ import api from "../services/api";
 
 export default function ResumeUpload() {
   const [file, setFile] = useState(null);
+  const [result, setResult] = useState(null);
 
   const handleUpload = async () => {
     if (!file) {
@@ -25,11 +26,7 @@ export default function ResumeUpload() {
         }
       );
 
-      alert(
-        "Match Percentage: " +
-          response.data.match_percentage +
-          "%"
-      );
+      setResult(response.data);
     } catch (error) {
       console.error(error);
       const message = error.response?.data?.message || error.response?.data?.error || error.message || "Upload failed";
@@ -56,6 +53,22 @@ export default function ResumeUpload() {
         >
           Upload
         </button>
+
+        {result && (
+          <div className="mt-6">
+            <p>Match: {result.match_percentage}%</p>
+            <p>Score: {result.resume_score}</p>
+            <p>Career: {result.predicted_career}</p>
+            <p>Skills:</p>
+            {result.extracted_skills.map((s) => (
+              <p key={s}>{s}</p>
+            ))}
+            <p>Missing Skills:</p>
+            {result.missing_skills.map((s) => (
+              <p key={s}>{s}</p>
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
