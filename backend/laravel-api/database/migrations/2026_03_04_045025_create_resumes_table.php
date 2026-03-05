@@ -16,6 +16,7 @@ return new class extends Migration
         $table->foreignId('user_id')->constrained()->onDelete('cascade');
         $table->string('file_path');
         $table->longText('extracted_text')->nullable();
+        $table->decimal('match_percentage', 5, 2)->default(0);
         $table->timestamps();
     });
 }
