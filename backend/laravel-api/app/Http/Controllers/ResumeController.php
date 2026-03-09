@@ -25,7 +25,7 @@ class ResumeController extends Controller
             return response()->json(['error' => 'Failed to extract text from PDF: ' . $e->getMessage()], 422);
         }
 
-        $jobDescription = "Looking for Python developer with SQL knowledge and data analysis skills.";
+        $jobDescription = $request->input('job', '');
 
         try {
             $response = Http::timeout(30)->post('http://127.0.0.1:8001/analyze', [
@@ -34,20 +34,31 @@ class ResumeController extends Controller
             ]);
 
             $data = $response->json();
-            $match = $data['match_percentage'] ?? 0;
         } catch (Exception $e) {
-            $match = 0;
-            $data = ['match_percentage' => 0];
+            $data = [
+                'match_percentage' => 0,
+                'ml_predicted_career' => 'Unknown',
+                'resume_score' => 0,
+                'extracted_skills' => [],
+                'missing_skills' => []
+            ];
         }
 
         $resume = Resume::create([
             'user_id' => auth('api')->id(),
             'file_path' => $path,
             'extracted_text' => $text,
-            'match_percentage' => $match
+            'match_percentage' => $data['match_percentage'] ?? 0,
+            'career_prediction' => $data['ml_predicted_career'] ?? 'Unknown',
+            'resume_score' => $data['resume_score'] ?? 0,
+            'skills' => $data['extracted_skills'] ?? [],
+            'missing_skills' => $data['missing_skills'] ?? []
         ]);
 
-        return response()->json($data);
+        return response()->json([
+            'resume_id' => $resume->id,
+            ...$data
+        ]);
     }
 
     public function analyze(Request $request)
@@ -68,9 +79,52 @@ class ResumeController extends Controller
 
             $data = $response->json();
         } catch (Exception $e) {
-            $data = ['match_percentage' => 0];
+            $data = [
+                'match_percentage' => 0,
+                'ml_predicted_career' => 'Unknown',
+                'resume_score' => 0,
+                'extracted_skills' => [],
+                'missing_skills' => []
+            ];
+        }
+
+        if (auth('api')->check()) {
+            Resume::create([
+                'user_id' => auth('api')->id(),
+                'file_path' => null,
+                'extracted_text' => $resumeText,
+                'match_percentage' => $data['match_percentage'] ?? 0,
+                'career_prediction' => $data['ml_predicted_career'] ?? 'Unknown',
+                'resume_score' => $data['resume_score'] ?? 0,
+                'skills' => $data['extracted_skills'] ?? [],
+                'missing_skills' => $data['missing_skills'] ?? []
+            ]);
         }
 
         return response()->json($data);
+    }
+
+    public function history()
+    {
+        $resumes = Resume::where('user_id', auth('api')->id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json($resumes);
+    }
+
+    public function delete($id)
+    {
+        $resume = Resume::where('id', $id)
+            ->where('user_id', auth('api')->id())
+            ->first();
+
+        if (!$resume) {
+            return response()->json(['error' => 'Resume not found'], 404);
+        }
+
+        $resume->delete();
+
+        return response()->json(['message' => 'Resume deleted successfully']);
     }
 }
