@@ -13,7 +13,16 @@ class Resume extends Model
         'user_id',
         'file_path',
         'extracted_text',
-        'match_percentage'
+        'match_percentage',
+        'career_prediction',
+        'resume_score',
+        'skills',
+        'missing_skills'
+    ];
+
+    protected $casts = [
+        'skills' => 'array',
+        'missing_skills' => 'array',
     ];
 
     public function user()
