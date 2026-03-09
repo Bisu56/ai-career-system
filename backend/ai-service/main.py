@@ -6,6 +6,10 @@ import joblib
 import re
 
 from skills_db import SKILLS_DATABASE, CAREER_MAPPING, JOBS
+from nlp_resume_parser import extract_entities
+from resume_suggestions import generate_resume_suggestions
+from interview_questions import get_interview_questions
+from courses_db import COURSES
 
 app = FastAPI()
 
@@ -84,6 +88,7 @@ async def analyze(data: ResumeRequest):
     resume_text = data.resume
     job_text = data.job
     
+    entities = extract_entities(resume_text)
     extracted_skills = extract_skills(resume_text)
     
     if job_text:
@@ -101,14 +106,22 @@ async def analyze(data: ResumeRequest):
     missing_skills = get_missing_skills(extracted_skills, rule_based_career)
     recommended_jobs = recommend_jobs(extracted_skills)
     
+    suggestions = generate_resume_suggestions(missing_skills, resume_score)
+    courses = COURSES.get(ml_career, [])
+    questions = get_interview_questions(ml_career)
+    
     return {
         "match_percentage": match_percentage,
-        "extracted_skills": extracted_skills,
-        "missing_skills": missing_skills,
         "resume_score": resume_score,
         "rule_based_career": rule_based_career,
         "ml_predicted_career": ml_career,
-        "recommended_jobs": recommended_jobs
+        "entities": entities,
+        "extracted_skills": extracted_skills,
+        "missing_skills": missing_skills,
+        "recommended_jobs": recommended_jobs,
+        "recommended_courses": courses,
+        "interview_questions": questions,
+        "resume_suggestions": suggestions
     }
 
 
