@@ -5,6 +5,7 @@ import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Dashboard from "../pages/Dashboard";
 import ResumeUpload from "../pages/ResumeUpload";
+import History from "../pages/History";
 import ProtectedRoute from "./ProtectedRoute";
 
 export default function AppRoutes() {
@@ -48,6 +49,14 @@ export default function AppRoutes() {
           element={
             <ProtectedRoute>
               <ResumeUpload />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <History />
             </ProtectedRoute>
           }
         />

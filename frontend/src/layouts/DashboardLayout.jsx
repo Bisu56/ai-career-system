@@ -20,6 +20,7 @@ export default function DashboardLayout({ children }) {
         <ul className="space-y-4">
           <li><Link to="/dashboard">Overview</Link></li>
           <li><Link to="/upload">Upload Resume</Link></li>
+          <li><Link to="/history">History</Link></li>
         </ul>
         <button
           onClick={handleLogout}
