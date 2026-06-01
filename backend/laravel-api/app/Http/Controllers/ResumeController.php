@@ -30,7 +30,9 @@ class ResumeController extends Controller
             return response()->json(['error' => 'Failed to extract text from PDF: ' . $e->getMessage()], 422);
         }
 
-        $jobDescription = $request->input('job', '');
+        // Cast to string: empty form fields arrive as null (ConvertEmptyStringsToNull
+        // middleware), but the AI service requires a string for "job".
+        $jobDescription = (string) $request->input('job', '');
 
         try {
             $response = Http::timeout(30)->post('http://127.0.0.1:8001/analyze', [
