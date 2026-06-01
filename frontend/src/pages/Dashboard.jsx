@@ -1,6 +1,7 @@
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import { FiFileText, FiBarChart2, FiBriefcase } from "react-icons/fi";
 import {
   BarChart,
   Bar,
@@ -13,7 +14,7 @@ import {
   Cell,
 } from "recharts";
 
-const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
+const COLORS = ["#6366f1", "#8b5cf6", "#22c55e", "#f59e0b", "#ec4899"];
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -50,49 +51,71 @@ export default function Dashboard() {
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">Loading...</p>
+        <div className="flex h-64 items-center justify-center">
+          <p className="text-slate-500">Loading...</p>
         </div>
       </DashboardLayout>
     );
   }
 
+  const cards = [
+    {
+      label: "Total Analyses",
+      value: stats.total_analyses,
+      icon: FiFileText,
+      tint: "bg-indigo-50 text-indigo-600",
+    },
+    {
+      label: "Average Resume Score",
+      value: `${stats.average_score}%`,
+      icon: FiBarChart2,
+      tint: "bg-green-50 text-green-600",
+    },
+    {
+      label: "Top Career Path",
+      value: stats.top_career,
+      icon: FiBriefcase,
+      tint: "bg-violet-50 text-violet-600",
+    },
+  ];
+
   return (
     <DashboardLayout>
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+        Dashboard
+      </h1>
+      <p className="mt-1 text-sm text-slate-500">
+        An overview of your resume analyses.
+      </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-gray-500 text-sm font-medium">
-            Total Analyses
-          </h3>
-          <p className="text-3xl font-bold text-blue-600 mt-2">
-            {stats.total_analyses}
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-gray-500 text-sm font-medium">
-            Average Resume Score
-          </h3>
-          <p className="text-3xl font-bold text-green-600 mt-2">
-            {stats.average_score}%
-          </p>
-        </div>
-
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-gray-500 text-sm font-medium">Top Career Path</h3>
-          <p className="text-3xl font-bold text-purple-600 mt-2">
-            {stats.top_career}
-          </p>
-        </div>
+      <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-3">
+        {cards.map(({ label, value, icon: Icon, tint }) => (
+          <div
+            key={label}
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-slate-500">
+                {label}
+              </span>
+              <span className={`grid h-9 w-9 place-items-center rounded-lg ${tint}`}>
+                <Icon className="h-5 w-5" />
+              </span>
+            </div>
+            <p className="mt-3 truncate text-2xl font-bold text-slate-900">
+              {value}
+            </p>
+          </div>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-4">Career Distribution</h3>
+      <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-base font-semibold text-slate-900">
+            Career Distribution
+          </h3>
           {careerData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={careerData}
@@ -100,7 +123,7 @@ export default function Dashboard() {
                   nameKey="career_prediction"
                   cx="50%"
                   cy="50%"
-                  outerRadius={80}
+                  outerRadius={85}
                   label
                 >
                   {careerData.map((entry, index) => (
@@ -114,25 +137,35 @@ export default function Dashboard() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-500 text-center py-8">
+            <p className="py-10 text-center text-sm text-slate-500">
               No career data yet. Upload your first resume!
             </p>
           )}
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold mb-4">Score History</h3>
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-base font-semibold text-slate-900">
+            Score History
+          </h3>
           {scoreHistory.length > 0 ? (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={260}>
               <BarChart data={scoreHistory}>
-                <XAxis dataKey="career_prediction" tick={{ fontSize: 12 }} />
-                <YAxis />
+                <XAxis
+                  dataKey="career_prediction"
+                  tick={{ fontSize: 12, fill: "#64748b" }}
+                />
+                <YAxis tick={{ fontSize: 12, fill: "#64748b" }} />
                 <Tooltip />
-                <Bar dataKey="resume_score" fill="#2563eb" name="Score" />
+                <Bar
+                  dataKey="resume_score"
+                  fill="#6366f1"
+                  name="Score"
+                  radius={[6, 6, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-500 text-center py-8">
+            <p className="py-10 text-center text-sm text-slate-500">
               No score history yet.
             </p>
           )}
