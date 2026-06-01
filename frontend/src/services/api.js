@@ -1,7 +1,9 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000/api",
+  // Configurable so it doesn't collide with other local Laravel apps.
+  // Override via frontend/.env -> VITE_API_URL=http://localhost:PORT/api
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api",
 });
 
 api.interceptors.request.use((config) => {
