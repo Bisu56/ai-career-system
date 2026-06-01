@@ -84,6 +84,22 @@ npm install
 npm run dev
 ```
 
+## Running tests
+
+**Laravel API** (in-memory SQLite, no setup needed):
+
+```bash
+cd backend/laravel-api
+php artisan test
+```
+
+**AI service**:
+
+```bash
+cd backend/ai-service
+./venv/bin/python -m pytest
+```
+
 ## API endpoints
 
 | Method | Endpoint | Auth | Description |
