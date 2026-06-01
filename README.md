@@ -96,6 +96,7 @@ npm run dev
 | GET | `/api/resume/history` | JWT | Past analyses |
 | DELETE | `/api/resume/{id}` | JWT | Delete an analysis |
 | GET | `/api/analytics` | JWT | Dashboard summary stats |
+| GET | `/api/admin/analytics` | JWT (admin) | System-wide stats (requires `is_admin`) |
 
 ## Troubleshooting
 
