@@ -4,6 +4,7 @@ import api from "../services/api";
 
 export default function ResumeUpload() {
   const [file, setFile] = useState(null);
+  const [job, setJob] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -16,6 +17,7 @@ export default function ResumeUpload() {
     setLoading(true);
     const formData = new FormData();
     formData.append("resume", file);
+    formData.append("job", job);
 
     try {
       const response = await api.post("/upload-resume", formData, {
@@ -55,6 +57,22 @@ export default function ResumeUpload() {
           />
         </div>
 
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Job Description{" "}
+            <span className="text-gray-400 font-normal">
+              (optional — paste a job posting to get a match score)
+            </span>
+          </label>
+          <textarea
+            rows={5}
+            value={job}
+            onChange={(e) => setJob(e.target.value)}
+            placeholder="Paste the job description here to see how well your resume matches..."
+            className="block w-full p-2 text-sm border rounded resize-y"
+          />
+        </div>
+
         <button
           onClick={handleUpload}
           disabled={loading}
@@ -72,12 +90,16 @@ export default function ResumeUpload() {
                 Analysis Results
               </h3>
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Match Percentage</p>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {result.match_percentage}%
-                  </p>
-                </div>
+                {result.match_percentage > 0 && (
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      Job Match
+                    </p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {result.match_percentage}%
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm text-gray-600">Resume Score</p>
                   <p className="text-2xl font-bold text-green-600">
