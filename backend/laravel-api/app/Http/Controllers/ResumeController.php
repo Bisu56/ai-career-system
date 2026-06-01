@@ -20,7 +20,12 @@ class ResumeController extends Controller
         $fullPath = storage_path('app/private/' . $path);
 
         try {
-            $text = Pdf::getText($fullPath);
+            // Use an explicit pdftotext path when available so extraction works
+            // even if php-fpm / artisan serve doesn't inherit /usr/local/bin on PATH.
+            $binary = collect(['/usr/local/bin/pdftotext', '/opt/homebrew/bin/pdftotext'])
+                ->first(fn ($p) => is_executable($p));
+
+            $text = $binary ? Pdf::getText($fullPath, $binary) : Pdf::getText($fullPath);
         } catch (Exception $e) {
             return response()->json(['error' => 'Failed to extract text from PDF: ' . $e->getMessage()], 422);
         }

@@ -1,0 +1,27 @@
+# Python (AI service)
+backend/ai-service/venv/
+backend/ai-service/__pycache__/
+**/__pycache__/
+*.pyc
+backend/ai-service/server.log
+
+# Node
+node_modules/
+frontend/dist/
+
+# Laravel
+backend/laravel-api/vendor/
+backend/laravel-api/node_modules/
+backend/laravel-api/.env
+backend/laravel-api/storage/*.key
+backend/laravel-api/database/*.sqlite
+
+# Env / secrets
+.env
+.env.local
+
+# OS / editor
+.DS_Store
+*.log
+.vscode/
+.idea/
