@@ -1,5 +1,7 @@
+from typing import Optional
+
 from fastapi import FastAPI
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import joblib
@@ -18,7 +20,13 @@ vectorizer = joblib.load("vectorizer.pkl")
 
 class ResumeRequest(BaseModel):
     resume: str
-    job: str = ""
+    # Optional: tolerate null/missing job so an empty field never 422s.
+    job: Optional[str] = ""
+
+    @field_validator("job", mode="before")
+    @classmethod
+    def _none_to_empty(cls, v):
+        return v or ""
 
 
 def extract_skills(text):

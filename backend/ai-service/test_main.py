@@ -51,6 +51,13 @@ def test_analyze_match_percentage_zero_without_job():
     assert res.json()["match_percentage"] == 0
 
 
+def test_analyze_tolerates_null_job():
+    # An empty form field arrives as null; it must not 422.
+    res = client.post("/analyze", json={"resume": "Python developer", "job": None})
+    assert res.status_code == 200
+    assert res.json()["match_percentage"] == 0
+
+
 def test_analyze_match_percentage_positive_with_relevant_job():
     res = client.post(
         "/analyze",
