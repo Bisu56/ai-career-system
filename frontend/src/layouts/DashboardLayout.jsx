@@ -4,12 +4,11 @@ import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 export default function DashboardLayout({ children }) {
-  const { setUser } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
