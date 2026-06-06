@@ -20,6 +20,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/analytics', [AnalyticsController::class, 'stats']);
     Route::get('/analytics/career-distribution', [AnalyticsController::class, 'careerDistribution']);
     Route::get('/analytics/score-history', [AnalyticsController::class, 'scoreHistory']);
-});
 
-Route::get('/admin/analytics', [AnalyticsController::class, 'adminStats']);
+    Route::get('/admin/analytics', [AnalyticsController::class, 'adminStats']);
+});

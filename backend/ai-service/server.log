@@ -1,7 +1,0 @@
-INFO:     Will watch for changes in these directories: ['/home/bishal/Project/ai-career-system/backend/ai-service']
-INFO:     Uvicorn running on http://127.0.0.1:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [124403] using StatReload
-INFO:     Started server process [124442]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     127.0.0.1:35344 - "POST /analyze HTTP/1.1" 200 OK
