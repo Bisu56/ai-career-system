@@ -6,3 +6,5 @@ pandas
 joblib
 nltk
 spacy
+pytest
+httpx

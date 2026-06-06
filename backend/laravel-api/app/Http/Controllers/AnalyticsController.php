@@ -56,6 +56,10 @@ class AnalyticsController extends Controller
 
     public function adminStats()
     {
+        if (!auth('api')->user()?->is_admin) {
+            return response()->json(['error' => 'Forbidden'], 403);
+        }
+
         $totalUsers = \App\Models\User::count();
         $totalAnalyses = Resume::count();
         $avgScore = Resume::avg('resume_score');
