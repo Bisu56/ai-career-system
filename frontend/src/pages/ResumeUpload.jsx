@@ -8,6 +8,19 @@ export default function ResumeUpload() {
   const [job, setJob] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [fileError, setFileError] = useState("");
+
+  const handleFileChange = (e) => {
+    const selected = e.target.files[0];
+    if (!selected) return;
+    if (selected.size > 2 * 1024 * 1024) {
+      setFileError("File exceeds 2 MB limit. Please choose a smaller PDF.");
+      setFile(null);
+    } else {
+      setFileError("");
+      setFile(selected);
+    }
+  };
 
   const handleUpload = async () => {
     if (!file) {
@@ -71,10 +84,13 @@ export default function ResumeUpload() {
             <input
               type="file"
               accept=".pdf"
-              onChange={(e) => setFile(e.target.files[0])}
+              onChange={handleFileChange}
               className="hidden"
             />
           </label>
+          {fileError && (
+            <p className="mt-2 text-xs text-red-600">{fileError}</p>
+          )}
         </div>
 
         <div className="mb-5">
@@ -95,7 +111,7 @@ export default function ResumeUpload() {
 
         <button
           onClick={handleUpload}
-          disabled={loading}
+          disabled={loading || !!fileError}
           className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Analyzing..." : "Upload & Analyze"}

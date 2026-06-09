@@ -15,8 +15,14 @@ from courses_db import COURSES
 
 app = FastAPI()
 
-model = joblib.load("model.pkl")
-vectorizer = joblib.load("vectorizer.pkl")
+try:
+    model = joblib.load("model.pkl")
+    vectorizer = joblib.load("vectorizer.pkl")
+except Exception as e:
+    raise RuntimeError(
+        f"Failed to load ML model files: {e}. "
+        "Run 'python train_model.py' to regenerate them."
+    ) from e
 
 class ResumeRequest(BaseModel):
     resume: str

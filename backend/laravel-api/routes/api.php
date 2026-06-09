@@ -12,8 +12,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     
-    Route::post('/upload-resume', [ResumeController::class, 'upload']);
-    Route::post('/resume/analyze', [ResumeController::class, 'analyze']);
+    Route::post('/upload-resume', [ResumeController::class, 'upload'])->middleware('throttle:resume-upload');
+    Route::post('/resume/analyze', [ResumeController::class, 'analyze'])->middleware('throttle:resume-upload');
     Route::get('/resume/history', [ResumeController::class, 'history']);
     Route::delete('/resume/{id}', [ResumeController::class, 'delete']);
     
