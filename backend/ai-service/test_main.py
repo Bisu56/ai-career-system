@@ -67,3 +67,20 @@ def test_analyze_match_percentage_positive_with_relevant_job():
         },
     )
     assert res.json()["match_percentage"] > 0
+
+
+def test_analyze_empty_resume_returns_valid_response():
+    """Empty PDF extraction produces an empty string; service must not crash."""
+    res = client.post("/analyze", json={"resume": "", "job": ""})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["extracted_skills"] == []
+    assert data["match_percentage"] == 0
+    assert data["resume_score"] == 0
+
+
+def test_analyze_whitespace_only_resume():
+    """Whitespace-only text (blank pages) must also be handled gracefully."""
+    res = client.post("/analyze", json={"resume": "   \n\t  ", "job": ""})
+    assert res.status_code == 200
+    assert res.json()["extracted_skills"] == []

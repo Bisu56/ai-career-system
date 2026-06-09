@@ -17,7 +17,7 @@ class ResumeAnalyzeTest extends TestCase
         $user = User::create(array_merge([
             'name' => 'Test User',
             'email' => 'user@example.com',
-            'password' => Hash::make('secret123'),
+            'password' => Hash::make('Secret123'),
         ], $attrs));
 
         return auth('api')->login($user);
@@ -33,9 +33,8 @@ class ResumeAnalyzeTest extends TestCase
 
     public function test_analyze_forwards_to_ai_service_and_returns_data(): void
     {
-        // Mock the AI service so the test doesn't need it running.
         Http::fake([
-            '127.0.0.1:8001/analyze' => Http::response([
+            '*' => Http::response([
                 'match_percentage' => 42.5,
                 'ml_predicted_career' => 'ML Engineer',
                 'resume_score' => 80,
@@ -57,8 +56,37 @@ class ResumeAnalyzeTest extends TestCase
                 'ml_predicted_career' => 'ML Engineer',
                 'match_percentage' => 42.5,
             ]);
+    }
 
-        Http::assertSent(fn ($request) => $request->url() === 'http://127.0.0.1:8001/analyze');
+    public function test_analyze_empty_resume_returns_validation_error(): void
+    {
+        $token = $this->authToken(['email' => 'empty@example.com']);
+
+        $this->withHeader('Authorization', "Bearer $token")
+            ->postJson('/api/resume/analyze', [
+                'resume' => '',
+                'job' => 'Some job',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('resume');
+    }
+
+    public function test_analyze_falls_back_gracefully_when_ai_service_unavailable(): void
+    {
+        Http::fake([
+            '*' => fn () => throw new \Exception('Connection refused'),
+        ]);
+
+        $token = $this->authToken(['email' => 'fallback@example.com']);
+
+        $response = $this->withHeader('Authorization', "Bearer $token")
+            ->postJson('/api/resume/analyze', [
+                'resume' => 'Python developer',
+                'job' => 'Python role',
+            ]);
+
+        $response->assertStatus(200)
+            ->assertJsonFragment(['ml_predicted_career' => 'Unknown', 'match_percentage' => 0]);
     }
 
     public function test_analyze_validates_input(): void

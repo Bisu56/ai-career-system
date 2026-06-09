@@ -16,7 +16,8 @@ class AuthTest extends TestCase
         $response = $this->postJson('/api/register', [
             'name' => 'Alice',
             'email' => 'alice@example.com',
-            'password' => 'secret123',
+            'password' => 'Secret123',
+            'password_confirmation' => 'Secret123',
         ]);
 
         $response->assertStatus(201)
@@ -30,13 +31,14 @@ class AuthTest extends TestCase
         User::create([
             'name' => 'Existing',
             'email' => 'dup@example.com',
-            'password' => Hash::make('secret123'),
+            'password' => Hash::make('Secret123'),
         ]);
 
         $response = $this->postJson('/api/register', [
             'name' => 'Another',
             'email' => 'dup@example.com',
-            'password' => 'secret123',
+            'password' => 'Secret123',
+            'password_confirmation' => 'Secret123',
         ]);
 
         $response->assertStatus(422)->assertJsonValidationErrors('email');
@@ -50,17 +52,41 @@ class AuthTest extends TestCase
             ->assertJsonValidationErrors(['name', 'email', 'password']);
     }
 
+    public function test_register_rejects_weak_password(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'name' => 'Test',
+            'email' => 'test@example.com',
+            'password' => 'weakpass',
+            'password_confirmation' => 'weakpass',
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors('password');
+    }
+
+    public function test_register_rejects_unconfirmed_password(): void
+    {
+        $response = $this->postJson('/api/register', [
+            'name' => 'Test',
+            'email' => 'test@example.com',
+            'password' => 'Secret123',
+            'password_confirmation' => 'Different1',
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors('password');
+    }
+
     public function test_login_succeeds_with_correct_credentials(): void
     {
         User::create([
             'name' => 'Bob',
             'email' => 'bob@example.com',
-            'password' => Hash::make('secret123'),
+            'password' => Hash::make('Secret123'),
         ]);
 
         $response = $this->postJson('/api/login', [
             'email' => 'bob@example.com',
-            'password' => 'secret123',
+            'password' => 'Secret123',
         ]);
 
         $response->assertStatus(200)->assertJsonStructure(['token', 'user']);
@@ -71,7 +97,7 @@ class AuthTest extends TestCase
         User::create([
             'name' => 'Bob',
             'email' => 'bob@example.com',
-            'password' => Hash::make('secret123'),
+            'password' => Hash::make('Secret123'),
         ]);
 
         $response = $this->postJson('/api/login', [
@@ -92,7 +118,7 @@ class AuthTest extends TestCase
         $user = User::create([
             'name' => 'Carol',
             'email' => 'carol@example.com',
-            'password' => Hash::make('secret123'),
+            'password' => Hash::make('Secret123'),
         ]);
 
         $token = auth('api')->login($user);

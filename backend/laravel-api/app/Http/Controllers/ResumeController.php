@@ -35,7 +35,7 @@ class ResumeController extends Controller
         $jobDescription = (string) $request->input('job', '');
 
         try {
-            $response = Http::timeout(30)->post('http://127.0.0.1:8001/analyze', [
+            $response = Http::timeout(30)->post(config('services.ai.url') . '/analyze', [
                 'resume' => $text,
                 'job' => $jobDescription
             ]);
@@ -79,7 +79,7 @@ class ResumeController extends Controller
         $jobDescription = $request->input('job');
 
         try {
-            $response = Http::timeout(30)->post('http://127.0.0.1:8001/analyze', [
+            $response = Http::timeout(30)->post(config('services.ai.url') . '/analyze', [
                 'resume' => $resumeText,
                 'job' => $jobDescription
             ]);
