@@ -12,11 +12,29 @@ from nlp_resume_parser import extract_entities
 from resume_suggestions import generate_resume_suggestions
 from interview_questions import get_interview_questions
 from courses_db import COURSES
+from job_sources import load_jobs, match_jobs
 
 app = FastAPI()
 
 model = joblib.load("model.pkl")
 vectorizer = joblib.load("vectorizer.pkl")
+
+class JobSearchRequest(BaseModel):
+    skills: list[str] = []
+    career: Optional[str] = ""
+    search: Optional[str] = ""
+    location: Optional[str] = ""
+    home_location: Optional[str] = ""
+    remote_only: bool = False
+    min_match: float = 0
+    limit: int = 30
+    refresh: bool = False
+
+    @field_validator("career", "search", "location", "home_location", mode="before")
+    @classmethod
+    def _null_to_empty(cls, v):
+        return v or ""
+
 
 class ResumeRequest(BaseModel):
     resume: str
@@ -120,6 +138,7 @@ async def analyze(data: ResumeRequest):
     
     return {
         "match_percentage": match_percentage,
+        "location": entities.get("location"),
         "resume_score": resume_score,
         "rule_based_career": rule_based_career,
         "ml_predicted_career": ml_career,
@@ -130,6 +149,28 @@ async def analyze(data: ResumeRequest):
         "recommended_courses": courses,
         "interview_questions": questions,
         "resume_suggestions": suggestions
+    }
+
+
+@app.post("/jobs")
+async def jobs(data: JobSearchRequest):
+    """Live listings from free job APIs, ranked against the resume's skills."""
+    jobs, meta = load_jobs(tags=data.skills, refresh=data.refresh)
+    ranked = match_jobs(
+        jobs,
+        user_skills=data.skills,
+        career=data.career,
+        search=data.search,
+        location=data.location,
+        home_location=data.home_location,
+        remote_only=data.remote_only,
+        min_match=data.min_match,
+    )
+    return {
+        "total": len(ranked),
+        "jobs": ranked[: max(1, data.limit)],
+        "sources": ["Jobicy", "Arbeitnow"],
+        "meta": meta,
     }
 
 

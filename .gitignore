@@ -25,3 +25,7 @@ backend/laravel-api/database/*.sqlite
 *.log
 .vscode/
 .idea/
+
+# Cached job listings fetched from the public job APIs
+backend/ai-service/jobs_cache.json
+backend/ai-service/ai.log
