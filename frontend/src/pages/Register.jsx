@@ -9,6 +9,7 @@ export default function Register() {
     name: "",
     email: "",
     password: "",
+    password_confirmation: "",
   });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -98,7 +99,7 @@ export default function Register() {
         </label>
         <input
           type="password"
-          placeholder="At least 6 characters"
+          placeholder="Min 8 chars, 1 uppercase, 1 number"
           className={inputClass}
           value={form.password}
           onChange={(e) => setForm({ ...form, password: e.target.value })}
@@ -107,6 +108,18 @@ export default function Register() {
         {fieldError("password") && (
           <p className="mt-1 text-xs text-red-600">{fieldError("password")}</p>
         )}
+
+        <label className="mb-1 mt-4 block text-sm font-medium text-slate-700">
+          Confirm Password
+        </label>
+        <input
+          type="password"
+          placeholder="Repeat your password"
+          className={inputClass}
+          value={form.password_confirmation}
+          onChange={(e) => setForm({ ...form, password_confirmation: e.target.value })}
+          required
+        />
 
         <button
           type="submit"

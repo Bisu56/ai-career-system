@@ -1,52 +1,201 @@
 text,career
-"python sql data analysis excel",Data Analyst
-"javascript react html css",Frontend Developer
-"php laravel sql api",Backend Developer
-"docker aws linux git",DevOps Engineer
-"machine learning python pandas",ML Engineer
-"python pandas numpy data analysis",Data Analyst
-"react javascript css frontend ui",Frontend Developer
-"laravel php mysql api backend",Backend Developer
-"aws docker kubernetes devops",DevOps Engineer
-"tensorflow keras deep learning python",ML Engineer
-"python sql tableau visualization",Data Analyst
-"vue js html css responsive",Frontend Developer
-"python django rest api",Backend Developer
-"jenkins ansible CI CD pipeline",DevOps Engineer
-"python scikit learn machine learning",ML Engineer
-"excel powerbi data reporting",Data Analyst
-"angular typescript rxjs",Frontend Developer
-"node js express mongodb",Backend Developer
-"gcp cloud infrastructure",DevOps Engineer
-"nlp natural language processing python",ML Engineer
-"sql server etl data warehouse",Data Analyst
-"react native mobile development",Frontend Developer
-"spring boot java microservices",Backend Developer
-"terraform cloudformation aws",DevOps Engineer
-"pytorch deep learning neural networks",ML Engineer
-"statistics visualization data mining",Data Analyst
-"bootstrap material ui css",Frontend Developer
-"ruby rails postgres api",Backend Developer
-"azure devops CI CD",DevOps Engineer
-"computer vision opencv python",ML Engineer
-"data cleaning preprocessing python",Data Analyst
-"javascript typescript react redux",Frontend Developer
-"golang kubernetes docker",Backend Developer
-"helm kubernetes monitoring",DevOps Engineer
-"reinforcement learning gaming ai",ML Engineer
-"tableau dashboard data analytics",Data Analyst
-"html sass javascript animation",Frontend Developer
-"flask python api development",Backend Developer
-"prometheus grafana monitoring",DevOps Engineer
-"xgboost lightgbm boosting algorithms",ML Engineer
-"business intelligence analytics reporting",Data Analyst
-"ui ux design figma",Frontend Developer
-"graphql node js apollo",Backend Developer
-"splunk siem security monitoring",DevOps Engineer
-"neural networks deep learning research",ML Engineer
-"etl informatica data integration",Data Analyst
-"wordpress php web development",Frontend Developer
-"express js RESTful APIs",Backend Developer
-"circleci CI CD deployment",DevOps Engineer
-"spark scala big data",ML Engineer
-"power query data transformation",Data Analyst
+python data analysis machine learning,Data Scientist
+java system design cloud computing,Software Engineer
+graphic design ui/ux adobe creative suite,UX Designer
+python deep learning statistics,AI Researcher
+project management communication agile,Project Manager
+c++ embedded systems iot,Embedded Systems Engineer
+sql data warehousing etl,Data Analyst
+content writing seo social media,Digital Marketer
+python natural language processing machine learning,NLP Engineer
+financial analysis excel econometrics,Financial Analyst
+research statistical analysis python,Research Scientist
+html css javascript,Frontend Developer
+java algorithms data structures,Software Developer
+data visualization python r,Data Analyst
+machine learning big data python,ML Engineer
+digital marketing content creation seo,Digital Marketer
+python data mining statistics,Data Scientist
+c# .net software design,Software Developer
+project management risk analysis negotiation,Project Manager
+user research ux design prototyping,UX Designer
+python data analysis sql,Data Analyst
+marketing strategy digital marketing crm,Marketing Manager
+javascript react node.js,Full Stack Developer
+data science machine learning python,AI Specialist
+network security linux python,Cybersecurity Analyst
+python statistics data mining,Research Analyst
+cloud computing devops python,DevOps Engineer
+content creation graphic design adobe photoshop,Graphic Designer
+python tensorflow deep learning,ML Engineer
+sql data warehousing r,Business Analyst
+java spring microservices,Backend Developer
+html css javascript ux,Frontend Developer
+machine learning r python,Data Scientist
+digital illustration adobe illustrator creativity,Graphic Designer
+python big data machine learning,Data Engineer
+copywriting seo social media,Digital Marketer
+python javascript data visualization,Data Analyst
+business analysis excel sql,Business Analyst
+python automation data analysis,DevOps Engineer
+graphic design ux/ui adobe xd,UX Designer
+python machine learning ai,ML Engineer
+digital marketing analytics seo,Digital Marketer
+python data analysis r,Financial Analyst
+content writing storytelling seo,Digital Marketer
+java android ui design,Mobile Developer
+ux research prototyping interaction design,UX Designer
+python cybersecurity network security,Cybersecurity Analyst
+sql data analysis excel,Data Analyst
+cloud computing python devops,DevOps Engineer
+graphic design illustration adobe creative suite,Graphic Designer
+python data analysis sql,Data Analyst
+java spring microservices,Backend Developer
+python machine learning tensorflow,ML Engineer
+html css javascript,Frontend Developer
+digital marketing seo content strategy,Digital Marketer
+sql data warehousing etl,Data Analyst
+graphic design illustration adobe illustrator,Graphic Designer
+python nlp deep learning,NLP Engineer
+research statistical analysis r,Research Scientist
+project management agile communication,Project Manager
+c++ embedded systems iot,Embedded Systems Engineer
+python data visualization r,Data Analyst
+java algorithms data structures,Software Developer
+ux research prototyping interaction design,UX Designer
+cloud computing devops python,DevOps Engineer
+digital marketing analytics seo,Digital Marketer
+c# .net software design,Software Developer
+financial analysis excel econometrics,Financial Analyst
+research statistical analysis python,Research Scientist
+html css javascript ux,Frontend Developer
+machine learning r python,Data Scientist
+content writing storytelling seo,Digital Marketer
+python big data machine learning,Data Engineer
+digital illustration adobe illustrator creativity,Graphic Designer
+python data mining statistics,Data Scientist
+business analysis excel sql,Business Analyst
+python automation data analysis,DevOps Engineer
+copywriting seo social media,Digital Marketer
+java android ui design,Mobile Developer
+python machine learning ai,ML Engineer
+sql data analysis excel,Data Analyst
+marketing strategy digital marketing crm,Marketing Manager
+javascript react node.js,Full Stack Developer
+data science machine learning python,AI Specialist
+network security linux python,Cybersecurity Analyst
+python statistics data mining,Research Analyst
+cloud computing python devops,DevOps Engineer
+graphic design illustration adobe creative suite,Graphic Designer
+python data analysis sql,Data Analyst
+java system design cloud computing,Software Engineer
+python deep learning statistics,AI Researcher
+project management communication agile,Project Manager
+c++ embedded systems iot,Embedded Systems Engineer
+sql data warehousing etl,Data Analyst
+html css javascript,Frontend Developer
+digital marketing seo content creation,Digital Marketer
+python natural language processing machine learning,NLP Engineer
+financial analysis excel econometrics,Financial Analyst
+research statistical analysis python,Research Scientist
+html css javascript,Frontend Developer
+python data analysis machine learning,Data Scientist
+java system design cloud computing,Software Engineer
+graphic design ui/ux adobe creative suite,UX Designer
+html css javascript,AI Researcher
+c++ embedded systems iot,Project Manager
+sql data warehousing etl,Embedded Systems Engineer
+javascript react node.js,Data Analyst
+digital marketing seo content creation,Digital Marketer
+project management agile communication,NLP Engineer
+python deep learning statistics,Financial Analyst
+financial analysis excel econometrics,Research Scientist
+research statistical analysis python,Frontend Developer
+cloud computing devops python,Software Developer
+java algorithms data structures,Data Analyst
+ux research prototyping interaction design,ML Engineer
+copywriting seo social media,Digital Marketer
+network security linux python,Data Scientist
+c# .net software design,Software Developer
+data visualization python r,Project Manager
+machine learning big data python,UX Designer
+python data analysis machine learning,Data Analyst
+java system design cloud computing,Marketing Manager
+graphic design ui/ux adobe creative suite,Full Stack Developer
+html css javascript,AI Specialist
+c++ embedded systems iot,Cybersecurity Analyst
+sql data warehousing etl,Research Analyst
+javascript react node.js,DevOps Engineer
+digital marketing seo content creation,Graphic Designer
+project management agile communication,ML Engineer
+python deep learning statistics,Business Analyst
+financial analysis excel econometrics,Backend Developer
+research statistical analysis python,Frontend Developer
+cloud computing devops python,Data Scientist
+java algorithms data structures,Graphic Designer
+ux research prototyping interaction design,Data Engineer
+copywriting seo social media,Digital Marketer
+network security linux python,Data Analyst
+c# .net software design,Business Analyst
+data visualization python r,DevOps Engineer
+machine learning big data python,UX Designer
+python data analysis machine learning,ML Engineer
+java system design cloud computing,Digital Marketer
+graphic design ui/ux adobe creative suite,Financial Analyst
+html css javascript,Digital Marketer
+c++ embedded systems iot,Mobile Developer
+sql data warehousing etl,UX Designer
+javascript react node.js,Cybersecurity Analyst
+digital marketing seo content creation,Data Analyst
+project management agile communication,DevOps Engineer
+python deep learning statistics,Graphic Designer
+financial analysis excel econometrics,Data Scientist
+research statistical analysis python,Software Engineer
+cloud computing devops python,UX Designer
+java algorithms data structures,AI Researcher
+ux research prototyping interaction design,Project Manager
+copywriting seo social media,Embedded Systems Engineer
+network security linux python,Data Analyst
+c# .net software design,Digital Marketer
+data visualization python r,NLP Engineer
+machine learning big data python,Financial Analyst
+python data analysis machine learning,Research Scientist
+java system design cloud computing,Frontend Developer
+graphic design ui/ux adobe creative suite,Software Developer
+html css javascript,Data Analyst
+c++ embedded systems iot,ML Engineer
+sql data warehousing etl,Digital Marketer
+javascript react node.js,Data Scientist
+digital marketing seo content creation,Software Developer
+project management agile communication,Project Manager
+python deep learning statistics,UX Designer
+financial analysis excel econometrics,Data Analyst
+research statistical analysis python,Marketing Manager
+cloud computing devops python,Full Stack Developer
+java algorithms data structures,AI Specialist
+ux research prototyping interaction design,Cybersecurity Analyst
+copywriting seo social media,Research Analyst
+network security linux python,DevOps Engineer
+c# .net software design,Graphic Designer
+data visualization python r,ML Engineer
+machine learning big data python,Business Analyst
+python data analysis machine learning,Backend Developer
+java system design cloud computing,Frontend Developer
+graphic design ui/ux adobe creative suite,Data Scientist
+html css javascript,Graphic Designer
+c++ embedded systems iot,Data Engineer
+sql data warehousing etl,Digital Marketer
+javascript react node.js,Data Analyst
+digital marketing seo content creation,Business Analyst
+project management agile communication,DevOps Engineer
+python deep learning statistics,UX Designer
+financial analysis excel econometrics,ML Engineer
+research statistical analysis python,Digital Marketer
+cloud computing devops python,Financial Analyst
+java algorithms data structures,Digital Marketer
+ux research prototyping interaction design,Mobile Developer
+copywriting seo social media,UX Designer
+network security linux python,Cybersecurity Analyst
+c# .net software design,Data Analyst
+data visualization python r,DevOps Engineer
+machine learning big data python,Graphic Designer

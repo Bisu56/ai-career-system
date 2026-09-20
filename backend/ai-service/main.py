@@ -12,6 +12,7 @@ from nlp_resume_parser import extract_entities
 from resume_suggestions import generate_resume_suggestions
 from interview_questions import get_interview_questions
 from courses_db import COURSES
+from job_sources import fetch_all
 
 app = FastAPI()
 
@@ -147,3 +148,10 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "healthy"}
+
+
+@app.get("/jobs/feed")
+async def jobs_feed(keyword: str = "python", limit: int = 50):
+    """Fetch live job listings from free public sources."""
+    jobs = fetch_all(keyword=keyword, limit=min(limit, 100))
+    return {"jobs": jobs}
