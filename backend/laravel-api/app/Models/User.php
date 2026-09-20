@@ -58,4 +58,9 @@ class User extends Authenticatable implements JWTSubject
             'is_admin' => 'boolean',
         ];
     }
+
+    public function savedJobs()
+    {
+        return $this->belongsToMany(JobListing::class, 'saved_jobs')->withTimestamps();
+    }
 }

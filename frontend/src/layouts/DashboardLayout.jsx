@@ -2,12 +2,13 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import Brand from "../components/Brand";
-import { FiGrid, FiUploadCloud, FiClock, FiLogOut } from "react-icons/fi";
+import { FiGrid, FiUploadCloud, FiClock, FiBriefcase, FiLogOut } from "react-icons/fi";
 
 const navItems = [
   { to: "/dashboard", label: "Overview", icon: FiGrid },
   { to: "/upload", label: "Upload Resume", icon: FiUploadCloud },
   { to: "/history", label: "History", icon: FiClock },
+  { to: "/jobs", label: "Job Search", icon: FiBriefcase },
 ];
 
 export default function DashboardLayout({ children }) {

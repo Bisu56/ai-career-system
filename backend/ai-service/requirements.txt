@@ -8,3 +8,5 @@ nltk
 spacy
 pytest
 httpx
+feedparser
+requests
