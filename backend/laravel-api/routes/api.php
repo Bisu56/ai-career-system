@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ResumeController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\JobController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
@@ -17,6 +18,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('/resume/history', [ResumeController::class, 'history']);
     Route::delete('/resume/{id}', [ResumeController::class, 'delete']);
     
+    Route::get('/jobs', [JobController::class, 'index']);
+
     Route::get('/analytics', [AnalyticsController::class, 'stats']);
     Route::get('/analytics/career-distribution', [AnalyticsController::class, 'careerDistribution']);
     Route::get('/analytics/score-history', [AnalyticsController::class, 'scoreHistory']);

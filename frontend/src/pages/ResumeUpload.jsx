@@ -1,7 +1,8 @@
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useState } from "react";
 import api from "../services/api";
-import { FiUploadCloud } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import { FiUploadCloud, FiBriefcase, FiMapPin } from "react-icons/fi";
 
 export default function ResumeUpload() {
   const [file, setFile] = useState(null);
@@ -120,6 +121,15 @@ export default function ResumeUpload() {
               </div>
             </div>
 
+            {result.location && (
+              <Section title="Location">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                  <FiMapPin className="h-3.5 w-3.5" />
+                  {result.location}
+                </span>
+              </Section>
+            )}
+
             <Section title="Predicted Career Path">
               <div className="flex flex-wrap gap-3">
                 <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-800">
@@ -160,7 +170,7 @@ export default function ResumeUpload() {
             )}
 
             {result.recommended_jobs?.length > 0 && (
-              <Section title="Recommended Jobs">
+              <Section title="Recommended Roles">
                 <div className="space-y-2">
                   {result.recommended_jobs.slice(0, 5).map((job, idx) => (
                     <div
@@ -176,6 +186,13 @@ export default function ResumeUpload() {
                     </div>
                   ))}
                 </div>
+                <Link
+                  to="/jobs"
+                  className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+                >
+                  <FiBriefcase className="h-4 w-4" />
+                  Browse live openings matched to this resume
+                </Link>
               </Section>
             )}
 

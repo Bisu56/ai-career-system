@@ -57,6 +57,7 @@ class ResumeController extends Controller
             'extracted_text' => $text,
             'match_percentage' => $data['match_percentage'] ?? 0,
             'career_prediction' => $data['ml_predicted_career'] ?? 'Unknown',
+            'location' => $data['location'] ?? null,
             'resume_score' => $data['resume_score'] ?? 0,
             'skills' => $data['extracted_skills'] ?? [],
             'missing_skills' => $data['missing_skills'] ?? []
@@ -102,6 +103,7 @@ class ResumeController extends Controller
                 'extracted_text' => $resumeText,
                 'match_percentage' => $data['match_percentage'] ?? 0,
                 'career_prediction' => $data['ml_predicted_career'] ?? 'Unknown',
+            'location' => $data['location'] ?? null,
                 'resume_score' => $data['resume_score'] ?? 0,
                 'skills' => $data['extracted_skills'] ?? [],
                 'missing_skills' => $data['missing_skills'] ?? []

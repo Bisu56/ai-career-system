@@ -15,6 +15,7 @@ class Resume extends Model
         'extracted_text',
         'match_percentage',
         'career_prediction',
+        'location',
         'resume_score',
         'skills',
         'missing_skills'
