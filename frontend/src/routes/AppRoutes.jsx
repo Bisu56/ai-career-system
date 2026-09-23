@@ -7,7 +7,12 @@ import Dashboard from "../pages/Dashboard";
 import ResumeUpload from "../pages/ResumeUpload";
 import History from "../pages/History";
 import Jobs from "../pages/Jobs";
+import JobDetail from "../pages/JobDetail";
+import Applications from "../pages/Applications";
 import ProtectedRoute from "./ProtectedRoute";
+import AdminProtectedRoute from "./AdminProtectedRoute";
+import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminUsers from "../pages/admin/AdminUsers";
 
 export default function AppRoutes() {
   return (
@@ -67,6 +72,38 @@ export default function AppRoutes() {
             <ProtectedRoute>
               <Jobs />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jobs/:id"
+          element={
+            <ProtectedRoute>
+              <JobDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/applications"
+          element={
+            <ProtectedRoute>
+              <Applications />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboard />
+            </AdminProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminProtectedRoute>
+              <AdminUsers />
+            </AdminProtectedRoute>
           }
         />
       </Routes>

@@ -63,4 +63,9 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->belongsToMany(JobListing::class, 'saved_jobs')->withTimestamps();
     }
+
+    public function applications()
+    {
+        return $this->hasMany(JobApplication::class);
+    }
 }
