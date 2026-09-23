@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { Link } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
 import { FiSearch, FiBookmark, FiExternalLink, FiRefreshCw } from "react-icons/fi";
@@ -7,15 +8,12 @@ function JobCard({ job, onToggleSave }) {
   return (
     <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="min-w-0 flex-1">
-        <a
-          href={job.url}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          to={`/jobs/${job.id}`}
           className="flex items-center gap-1.5 text-sm font-semibold text-indigo-700 hover:underline"
         >
           {job.title}
-          <FiExternalLink className="h-3.5 w-3.5 shrink-0" />
-        </a>
+        </Link>
         <p className="mt-0.5 text-sm text-slate-600">{job.company}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
           {job.location && (
@@ -28,17 +26,28 @@ function JobCard({ job, onToggleSave }) {
           </span>
         </div>
       </div>
-      <button
-        onClick={() => onToggleSave(job)}
-        title={job.saved ? "Unsave" : "Save"}
-        className={`shrink-0 rounded-lg p-2 transition ${
-          job.saved
-            ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
-            : "text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-        }`}
-      >
-        <FiBookmark className="h-4 w-4" fill={job.saved ? "currentColor" : "none"} />
-      </button>
+      <div className="shrink-0 flex items-center gap-2">
+        <a
+          href={job.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Open original posting"
+          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition"
+        >
+          <FiExternalLink className="h-4 w-4" />
+        </a>
+        <button
+          onClick={() => onToggleSave(job)}
+          title={job.saved ? "Unsave" : "Save"}
+          className={`rounded-lg p-2 transition ${
+            job.saved
+              ? "bg-indigo-100 text-indigo-700 hover:bg-indigo-200"
+              : "text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
+          }`}
+        >
+          <FiBookmark className="h-4 w-4" fill={job.saved ? "currentColor" : "none"} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -56,7 +65,8 @@ export default function Jobs() {
     setError("");
     try {
       const res = await api.get("/jobs", { params: { q } });
-      setJobs(res.data);
+      // API returns { total, jobs } — extract the jobs array
+      setJobs(res.data.jobs ?? res.data);
     } catch {
       setError("Failed to load jobs.");
     } finally {

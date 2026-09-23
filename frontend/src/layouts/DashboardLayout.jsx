@@ -2,13 +2,19 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
 import Brand from "../components/Brand";
-import { FiGrid, FiUploadCloud, FiClock, FiBriefcase, FiLogOut } from "react-icons/fi";
+import { FiGrid, FiUploadCloud, FiClock, FiBriefcase, FiLogOut, FiShield, FiUsers, FiFileText } from "react-icons/fi";
 
 const navItems = [
   { to: "/dashboard", label: "Overview", icon: FiGrid },
   { to: "/upload", label: "Upload Resume", icon: FiUploadCloud },
   { to: "/history", label: "History", icon: FiClock },
   { to: "/jobs", label: "Job Search", icon: FiBriefcase },
+  { to: "/applications", label: "Applications", icon: FiFileText },
+];
+
+const adminNavItems = [
+  { to: "/admin", label: "Admin Dashboard", icon: FiShield },
+  { to: "/admin/users", label: "User Management", icon: FiUsers },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -44,6 +50,32 @@ export default function DashboardLayout({ children }) {
               {label}
             </NavLink>
           ))}
+
+          {user?.is_admin && (
+            <>
+              <div className="my-2 border-t border-slate-100" />
+              <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-widest text-slate-400">
+                Admin
+              </p>
+              {adminNavItems.map(({ to, label, icon: Icon }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={to === "/admin"}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                      isActive
+                        ? "bg-purple-50 text-purple-700"
+                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    }`
+                  }
+                >
+                  <Icon className="h-5 w-5" />
+                  {label}
+                </NavLink>
+              ))}
+            </>
+          )}
         </nav>
 
         <div className="border-t border-slate-200 p-3">
