@@ -25,6 +25,8 @@ class JobListing extends Model
         'employment_type',
         'salary_range',
         'application_deadline',
+        // Moderation
+        'moderation_status',  // pending | approved | rejected
     ];
 
     protected $casts = [
@@ -33,6 +35,23 @@ class JobListing extends Model
         'posted_at'       => 'datetime',
         'is_active'       => 'boolean',
     ];
+
+    // ── Scopes ─────────────────────────────────────────────────────────────────
+
+    /** Only jobs that job seekers should see: is_active AND admin-approved. */
+    public function scopeVisibleToSeekers($query)
+    {
+        return $query->where('is_active', true)
+                     ->where('moderation_status', 'approved');
+    }
+
+    /** Only jobs pending moderation review. */
+    public function scopePendingModeration($query)
+    {
+        return $query->where('moderation_status', 'pending');
+    }
+
+    // ── Relations ──────────────────────────────────────────────────────────────
 
     public function savedByUsers()
     {
