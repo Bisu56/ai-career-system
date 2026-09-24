@@ -2,6 +2,7 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
+import { APP_STATUS_COLORS } from "../constants/jobs";
 import {
   FiFileText,
   FiBarChart2,
@@ -24,14 +25,6 @@ import {
 
 const COLORS = ["#6366f1", "#8b5cf6", "#22c55e", "#f59e0b", "#ec4899"];
 
-const APP_STATUS_COLORS = {
-  applied:     "bg-blue-100 text-blue-700",
-  shortlisted: "bg-yellow-100 text-yellow-700",
-  interview:   "bg-violet-100 text-violet-700",
-  selected:    "bg-green-100 text-green-700",
-  rejected:    "bg-red-100 text-red-600",
-  withdrawn:   "bg-slate-100 text-slate-600",
-};
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -41,36 +34,37 @@ export default function Dashboard() {
   });
   const [careerData, setCareerData]     = useState([]);
   const [scoreHistory, setScoreHistory] = useState([]);
-  const [savedCount, setSavedCount]     = useState(0);
   const [appSummary, setAppSummary]     = useState({ total: 0, counts: {} });
+  const [recommended, setRecommended]   = useState({ based_on: null, jobs: [] });
   const [loading, setLoading]           = useState(true);
+  const [loadError, setLoadError]       = useState("");
 
   useEffect(() => {
+    const fetchData = async () => {
+      const results = await Promise.allSettled([
+        api.get("/analytics"),
+        api.get("/analytics/career-distribution"),
+        api.get("/analytics/score-history"),
+        api.get("/applications/summary"),
+        api.get("/jobs/recommended"),
+      ]);
+      const [statsRes, careerRes, historyRes, appRes, recRes] = results.map((r) =>
+        r.status === "fulfilled" ? r.value.data : null
+      );
+
+      if (statsRes) setStats(statsRes);
+      if (careerRes) setCareerData(careerRes);
+      if (historyRes) setScoreHistory(historyRes);
+      if (appRes) setAppSummary(appRes);
+      if (recRes) setRecommended(recRes);
+      if (results.some((r) => r.status === "rejected")) {
+        setLoadError("Some of your dashboard data could not be loaded. Refresh the page to try again.");
+      }
+      setLoading(false);
+    };
+
     fetchData();
   }, []);
-
-  const fetchData = async () => {
-    try {
-      const [statsRes, careerRes, historyRes, savedRes, appRes] =
-        await Promise.all([
-          api.get("/analytics"),
-          api.get("/analytics/career-distribution"),
-          api.get("/analytics/score-history"),
-          api.get("/jobs/saved"),
-          api.get("/applications/summary"),
-        ]);
-
-      setStats(statsRes.data);
-      setCareerData(careerRes.data);
-      setScoreHistory(historyRes.data);
-      setSavedCount(Array.isArray(savedRes.data) ? savedRes.data.length : 0);
-      setAppSummary(appRes.data);
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -87,7 +81,7 @@ export default function Dashboard() {
       label: "Total Analyses",
       value: stats.total_analyses,
       icon: FiFileText,
-      tint: "bg-indigo-50 text-indigo-600",
+      tint: "bg-brand-50 text-brand-600",
       to: "/history",
     },
     {
@@ -101,12 +95,12 @@ export default function Dashboard() {
       label: "Top Career Path",
       value: stats.top_career,
       icon: FiBriefcase,
-      tint: "bg-violet-50 text-violet-600",
+      tint: "bg-brand-50 text-brand-600",
       to: "/upload",
     },
     {
       label: "Saved Jobs",
-      value: savedCount,
+      value: stats.saved_jobs ?? 0,
       icon: FiBookmark,
       tint: "bg-amber-50 text-amber-600",
       to: "/jobs",
@@ -129,13 +123,17 @@ export default function Dashboard() {
         An overview of your resume analyses, saved jobs, and applications.
       </p>
 
+      {loadError && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{loadError}</div>
+      )}
+
       {/* Stat cards */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {statCards.map(({ label, value, icon: Icon, tint, to }) => (
           <Link
             key={label}
             to={to}
-            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-indigo-200 hover:shadow-md transition"
+            className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm hover:border-brand-200 hover:shadow-md transition"
           >
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-slate-500">{label}</span>
@@ -159,7 +157,7 @@ export default function Dashboard() {
             </h3>
             <Link
               to="/applications"
-              className="text-sm text-indigo-600 hover:underline"
+              className="text-sm text-brand-600 hover:underline"
             >
               View all →
             </Link>
@@ -180,6 +178,60 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">
+              Recommended Jobs For You
+            </h3>
+            {recommended.based_on && (
+              <p className="mt-0.5 text-xs text-slate-500">
+                Based on your latest analysis ({recommended.based_on.career})
+              </p>
+            )}
+          </div>
+          <Link
+            to="/jobs?tab=recommended"
+            className="text-sm text-brand-600 hover:underline"
+          >
+            See all →
+          </Link>
+        </div>
+        {!recommended.based_on ? (
+          <p className="py-6 text-center text-sm text-slate-500">
+            <Link to="/upload" className="text-brand-600 hover:underline">
+              Upload a resume
+            </Link>{" "}
+            to get job recommendations matched to your skills.
+          </p>
+        ) : recommended.jobs.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-500">
+            No open jobs match your skills yet. Check back soon.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {recommended.jobs.slice(0, 5).map((job) => (
+              <Link
+                key={job.id}
+                to={`/jobs/${job.id}`}
+                className="flex items-center justify-between gap-4 rounded-lg bg-slate-50 px-4 py-3 transition hover:bg-brand-50"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-900">{job.title}</p>
+                  <p className="truncate text-xs text-slate-500">
+                    {job.company}
+                    {job.matched_skills?.length > 0 && ` · ${job.matched_skills.join(", ")}`}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-brand-100 px-2.5 py-1 text-xs font-semibold text-brand-700">
+                  {job.recommendation_score}% match
+                </span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Charts */}
       <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -212,7 +264,7 @@ export default function Dashboard() {
           ) : (
             <p className="py-10 text-center text-sm text-slate-500">
               No career data yet.{" "}
-              <Link to="/upload" className="text-indigo-600 hover:underline">
+              <Link to="/upload" className="text-brand-600 hover:underline">
                 Upload your first resume!
               </Link>
             </p>
@@ -256,7 +308,7 @@ export default function Dashboard() {
         <div className="flex flex-wrap gap-3">
           <Link
             to="/upload"
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition"
           >
             Upload Resume
           </Link>

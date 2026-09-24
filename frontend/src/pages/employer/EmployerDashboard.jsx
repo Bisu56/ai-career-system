@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import EmployerDashboardLayout from "../../layouts/EmployerDashboardLayout";
 import api from "../../services/api";
+import { APP_STATUS_COLORS } from "../../constants/jobs";
 import {
   FiBriefcase,
   FiCheckCircle,
@@ -12,14 +13,6 @@ import {
   FiUser,
 } from "react-icons/fi";
 
-const APP_STATUS_COLORS = {
-  applied:     "bg-blue-100 text-blue-700",
-  shortlisted: "bg-yellow-100 text-yellow-700",
-  interview:   "bg-violet-100 text-violet-700",
-  selected:    "bg-green-100 text-green-700",
-  rejected:    "bg-red-100 text-red-600",
-  withdrawn:   "bg-slate-100 text-slate-600",
-};
 
 export default function EmployerDashboard() {
   const [stats, setStats]     = useState(null);
@@ -55,7 +48,7 @@ export default function EmployerDashboard() {
     { label: "Total Jobs",       value: stats.total_jobs,       icon: FiBriefcase,    tint: "bg-emerald-50 text-emerald-600", to: "/employer/jobs" },
     { label: "Active Jobs",      value: stats.active_jobs,      icon: FiCheckCircle,  tint: "bg-blue-50 text-blue-600",       to: "/employer/jobs?status=active" },
     { label: "Closed Jobs",      value: stats.closed_jobs,      icon: FiXCircle,      tint: "bg-slate-50 text-slate-500",     to: "/employer/jobs?status=closed" },
-    { label: "Total Applicants", value: stats.total_applicants, icon: FiUsers,        tint: "bg-violet-50 text-violet-600",   to: "/employer/jobs" },
+    { label: "Total Applicants", value: stats.total_applicants, icon: FiUsers,        tint: "bg-brand-50 text-brand-600",   to: "/employer/jobs" },
   ];
 
   return (
@@ -86,6 +79,20 @@ export default function EmployerDashboard() {
           >
             Set Up Profile
           </Link>
+        </div>
+      )}
+
+      {stats.pending_jobs > 0 && (
+        <div className="mt-5 flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+          <FiAlertCircle className="h-4 w-4 shrink-0" />
+          {stats.pending_jobs} job{stats.pending_jobs !== 1 ? "s are" : " is"} waiting for admin review and not yet visible to job seekers.
+        </div>
+      )}
+
+      {stats.rejected_jobs > 0 && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          <FiXCircle className="h-4 w-4 shrink-0" />
+          {stats.rejected_jobs} job{stats.rejected_jobs !== 1 ? "s were" : " was"} rejected by an admin. Edit and resubmit from My Jobs.
         </div>
       )}
 

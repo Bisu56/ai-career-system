@@ -1,8 +1,8 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/authContextValue";
 import Brand from "../components/Brand";
-import { FiGrid, FiUploadCloud, FiClock, FiBriefcase, FiLogOut, FiShield, FiUsers, FiFileText } from "react-icons/fi";
+import { FiGrid, FiUploadCloud, FiClock, FiBriefcase, FiLogOut, FiShield, FiUsers, FiFileText, FiCheckSquare, FiAlertCircle, FiRefreshCw } from "react-icons/fi";
 
 const navItems = [
   { to: "/dashboard", label: "Overview", icon: FiGrid },
@@ -15,6 +15,9 @@ const navItems = [
 const adminNavItems = [
   { to: "/admin", label: "Admin Dashboard", icon: FiShield },
   { to: "/admin/users", label: "User Management", icon: FiUsers },
+  { to: "/admin/employers", label: "Approve Employers", icon: FiCheckSquare },
+  { to: "/admin/jobs", label: "Moderate Jobs", icon: FiAlertCircle },
+  { to: "/admin/feed", label: "External Job Feed", icon: FiRefreshCw },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -27,7 +30,7 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-paper">
       <aside className="flex w-64 flex-col border-r border-slate-200 bg-white">
         <div className="px-6 py-5">
           <Brand />
@@ -41,7 +44,7 @@ export default function DashboardLayout({ children }) {
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                   isActive
-                    ? "bg-indigo-50 text-indigo-700"
+                    ? "bg-brand-50 text-brand-700"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 }`
               }
@@ -65,7 +68,7 @@ export default function DashboardLayout({ children }) {
                   className={({ isActive }) =>
                     `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
                       isActive
-                        ? "bg-purple-50 text-purple-700"
+                        ? "bg-brand-50 text-brand-700"
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                     }`
                   }
@@ -81,7 +84,7 @@ export default function DashboardLayout({ children }) {
         <div className="border-t border-slate-200 p-3">
           {user && (
             <div className="mb-2 flex items-center gap-3 rounded-lg px-3 py-2">
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
                 {(user.name || "?").charAt(0).toUpperCase()}
               </span>
               <div className="min-w-0">

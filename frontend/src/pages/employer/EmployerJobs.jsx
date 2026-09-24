@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import EmployerDashboardLayout from "../../layouts/EmployerDashboardLayout";
 import api from "../../services/api";
+import { REVIEW_STATUS_COLORS } from "../../constants/jobs";
+import { formatDate } from "../../utils/format";
 import {
   FiPlusCircle,
   FiEdit2,
@@ -11,7 +13,19 @@ import {
   FiAlertCircle,
   FiBriefcase,
   FiCheckCircle,
+  FiTrash2,
 } from "react-icons/fi";
+
+const MODERATION_LABELS = { pending: "In Review", approved: "Live", rejected: "Rejected" };
+
+function ModerationBadge({ status }) {
+  const key = MODERATION_LABELS[status] ? status : "pending";
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${REVIEW_STATUS_COLORS[key]}`}>
+      {MODERATION_LABELS[key]}
+    </span>
+  );
+}
 
 function StatusBadge({ isActive }) {
   return isActive ? (
@@ -33,6 +47,7 @@ export default function EmployerJobs() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState("");
   const [closingId, setClosingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -41,8 +56,8 @@ export default function EmployerJobs() {
       const params = statusFilter !== "all" ? { status: statusFilter } : {};
       const res = await api.get("/employer/jobs", { params });
       setJobs(res.data);
-    } catch {
-      setError("Failed to load jobs.");
+    } catch (err) {
+      setError(err.response?.data?.error ?? "Failed to load jobs.");
     } finally {
       setLoading(false);
     }
@@ -55,11 +70,28 @@ export default function EmployerJobs() {
     setClosingId(job.id);
     try {
       const res = await api.patch(`/employer/jobs/${job.id}/close`);
-      setJobs((prev) => prev.map((j) => (j.id === job.id ? res.data.job : j)));
+      setJobs((prev) =>
+        prev
+          .map((j) => (j.id === job.id ? { ...j, ...res.data.job } : j))
+          .filter((j) => statusFilter !== "active" || j.is_active)
+      );
     } catch (err) {
       alert(err.response?.data?.error ?? "Failed to close job.");
     } finally {
       setClosingId(null);
+    }
+  };
+
+  const handleDelete = async (job) => {
+    if (!confirm(`Delete "${job.title}"? This also removes its applications and cannot be undone.`)) return;
+    setDeletingId(job.id);
+    try {
+      await api.delete(`/employer/jobs/${job.id}`);
+      setJobs((prev) => prev.filter((j) => j.id !== job.id));
+    } catch (err) {
+      setError(err.response?.data?.error ?? "Failed to delete job.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -142,6 +174,7 @@ export default function EmployerJobs() {
                   <th className="px-5 py-3">Type</th>
                   <th className="px-5 py-3">Applicants</th>
                   <th className="px-5 py-3">Deadline</th>
+                  <th className="px-5 py-3">Review</th>
                   <th className="px-5 py-3">Status</th>
                   <th className="px-5 py-3 text-right">Actions</th>
                 </tr>
@@ -157,30 +190,27 @@ export default function EmployerJobs() {
                     </td>
                     <td className="whitespace-nowrap px-5 py-4">
                       {job.employment_type ? (
-                        <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-600 capitalize">
+                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-600 capitalize">
                           {job.employment_type}
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-400">—</span>
+                        <span className="text-xs text-slate-400">-</span>
                       )}
                     </td>
                     <td className="px-5 py-4">
                       <Link
                         to={`/employer/jobs/${job.id}/applicants`}
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:underline"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 hover:underline"
                       >
                         <FiUsers className="h-3.5 w-3.5" />
                         {job.applications_count ?? 0}
                       </Link>
                     </td>
                     <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-500">
-                      {job.application_deadline
-                        ? new Date(job.application_deadline).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })
-                        : "—"}
+                      {formatDate(job.application_deadline)}
+                    </td>
+                    <td className="px-5 py-4">
+                      <ModerationBadge status={job.moderation_status} />
                     </td>
                     <td className="px-5 py-4">
                       <StatusBadge isActive={job.is_active} />
@@ -221,6 +251,14 @@ export default function EmployerJobs() {
                             <FiCheckCircle className="h-3.5 w-3.5" /> Closed
                           </span>
                         )}
+                        <button
+                          onClick={() => handleDelete(job)}
+                          disabled={deletingId === job.id}
+                          title="Delete Job"
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                        >
+                          <FiTrash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>

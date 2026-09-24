@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
+import { formatDate } from "../utils/format";
 import {
   FiExternalLink,
   FiRefreshCw,
@@ -22,11 +23,11 @@ const STATUS_META = {
   },
   interview: {
     label: "Interview",
-    color: "bg-violet-100 text-violet-700",
-    dot: "bg-violet-500",
+    color: "bg-brand-100 text-brand-700",
+    dot: "bg-brand-500",
   },
   selected: {
-    label: "Selected 🎉",
+    label: "Selected",
     color: "bg-green-100 text-green-700",
     dot: "bg-green-500",
   },
@@ -60,13 +61,6 @@ function StatusBadge({ status }) {
   );
 }
 
-function formatDate(dateString) {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 export default function Applications() {
   const [applications, setApplications] = useState([]);
@@ -181,7 +175,7 @@ export default function Applications() {
             <p className="text-slate-500">You haven't applied for any jobs yet.</p>
             <Link
               to="/jobs"
-              className="mt-4 inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition"
+              className="mt-4 inline-block rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-700 transition"
             >
               Browse Jobs
             </Link>
@@ -207,13 +201,13 @@ export default function Applications() {
                       <td className="px-5 py-4">
                         <Link
                           to={`/jobs/${app.job_listing_id}`}
-                          className="text-sm font-medium text-indigo-700 hover:underline"
+                          className="text-sm font-medium text-brand-700 hover:underline"
                         >
-                          {app.job?.title ?? "—"}
+                          {app.job?.title ?? "-"}
                         </Link>
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
-                        {app.job?.company ?? "—"}
+                        {app.job?.company ?? "-"}
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-500">
                         {formatDate(app.created_at)}
@@ -223,7 +217,7 @@ export default function Applications() {
                       </td>
                       <td className="whitespace-nowrap px-5 py-4 text-right">
                         <div className="flex items-center justify-end gap-3">
-                          {app.job?.url && (
+                          {app.job?.url && !app.job?.accepts_applications && (
                             <a
                               href={app.job.url}
                               target="_blank"

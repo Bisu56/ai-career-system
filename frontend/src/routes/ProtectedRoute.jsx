@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { Navigate } from "react-router-dom";
-import { AuthContext } from "../context/AuthContext";
+import { AuthContext } from "../context/authContextValue";
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useContext(AuthContext);
@@ -17,6 +17,10 @@ export default function ProtectedRoute({ children }) {
 
   if (!user) {
     return <Navigate to="/login" />;
+  }
+
+  if (user.is_employer) {
+    return <Navigate to="/employer/dashboard" />;
   }
 
   return children;

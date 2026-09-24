@@ -11,8 +11,9 @@ use App\Http\Controllers\EmployerJobController;
 use App\Http\Controllers\EmployerApplicationController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login',    [AuthController::class, 'login']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle:auth');
+Route::post('/refresh',  [AuthController::class, 'refresh'])->middleware('throttle:auth');
 
 Route::middleware('auth:api')->group(function () {
 
@@ -23,6 +24,8 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/upload-resume',   [ResumeController::class, 'upload'])->middleware('throttle:resume-upload');
     Route::post('/resume/analyze',  [ResumeController::class, 'analyze'])->middleware('throttle:resume-upload');
     Route::get('/resume/history',   [ResumeController::class, 'history']);
+    Route::get('/resume/{id}',      [ResumeController::class, 'show']);
+    Route::get('/resume/{id}/file', [ResumeController::class, 'download']);
     Route::delete('/resume/{id}',   [ResumeController::class, 'delete']);
 
     // Analytics
@@ -51,16 +54,19 @@ Route::middleware('auth:api')->group(function () {
         // Job moderation  — static segments before {id}
         Route::get('/jobs',                     [AdminController::class, 'jobs']);
         Route::post('/jobs/refresh',            [AdminController::class, 'refreshFeed']);
+        Route::get('/feed',                     [AdminController::class, 'feedStatus']);
         Route::get('/jobs/{id}',                [AdminController::class, 'showJob']);
         Route::patch('/jobs/{id}/approve',      [AdminController::class, 'approveJob']);
         Route::patch('/jobs/{id}/reject',       [AdminController::class, 'rejectJob']);
         Route::patch('/jobs/{id}/moderation',   [AdminController::class, 'moderateJob']);
+        Route::delete('/jobs/{id}',             [AdminController::class, 'destroyJob']);
     });
 
     // ── Job seeker job routes ───────────────────────────────────────────────
     Route::get('/jobs',               [JobController::class, 'search']);
     Route::get('/jobs/saved',         [JobController::class, 'saved']);
-    Route::post('/jobs/refresh',      [JobController::class, 'refresh']);  // legacy; kept for compat
+    Route::get('/jobs/recommended',   [JobController::class, 'recommended']);
+    Route::post('/jobs/refresh',      [AdminController::class, 'refreshFeed']);  // legacy; kept for compat
     Route::get('/jobs/{id}',          [JobController::class, 'show']);
     Route::post('/jobs/{id}/save',    [JobController::class, 'save']);
     Route::delete('/jobs/{id}/save',  [JobController::class, 'unsave']);
@@ -88,6 +94,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/employer/jobs/{jobId}/applicants/score-all',                   [EmployerApplicationController::class, 'scoreAll']);
     Route::post('/employer/jobs/{jobId}/applicants/{applicationId}/score',       [EmployerApplicationController::class, 'score']);
     Route::patch('/employer/jobs/{jobId}/applicants/{applicationId}/status',     [EmployerApplicationController::class, 'updateStatus']);
+    Route::get('/employer/jobs/{jobId}/applicants/{applicationId}/resume',       [EmployerApplicationController::class, 'resume']);
 
     Route::get('/employer/dashboard', function () {
         $user = auth('api')->user();
@@ -97,6 +104,8 @@ Route::middleware('auth:api')->group(function () {
             'total_jobs'       => $user->jobListings()->count(),
             'active_jobs'      => $user->jobListings()->where('is_active', true)->count(),
             'closed_jobs'      => $user->jobListings()->where('is_active', false)->count(),
+            'pending_jobs'     => $user->jobListings()->where('moderation_status', 'pending')->count(),
+            'rejected_jobs'    => $user->jobListings()->where('moderation_status', 'rejected')->count(),
             'total_applicants' => \App\Models\JobApplication::whereIn('job_listing_id', $jobIds)->count(),
             'status_counts'    => \App\Models\JobApplication::whereIn('job_listing_id', $jobIds)
                                     ->selectRaw('status, COUNT(*) as count')->groupBy('status')

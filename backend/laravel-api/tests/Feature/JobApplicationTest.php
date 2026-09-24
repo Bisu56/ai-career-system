@@ -19,7 +19,8 @@ class JobApplicationTest extends TestCase
     private function job(array $attrs = []): JobListing
     {
         return JobListing::create(array_merge([
-            'source'      => 'test',
+            'employer_id' => User::factory()->create(['is_employer' => true, 'employer_status' => 'approved', 'is_active' => true])->id,
+            'source'      => 'employer',
             'external_id' => uniqid('job_'),
             'title'       => 'Software Engineer',
             'company'     => 'Acme Corp',

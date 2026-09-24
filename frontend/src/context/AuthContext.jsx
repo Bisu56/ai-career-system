@@ -1,18 +1,15 @@
-import { createContext, useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
-
-export const AuthContext = createContext();
+import { AuthContext } from "./authContextValue";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   // `loading` is true until we've checked for an existing session, so
   // ProtectedRoute doesn't bounce a logged-in user to /login on refresh.
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(localStorage.getItem("token")));
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setLoading(false);
+    if (!localStorage.getItem("token")) {
       return;
     }
 
@@ -30,6 +27,11 @@ export function AuthProvider({ children }) {
     setUser(userData);
   };
 
+  const refreshUser = useCallback(
+    () => api.get("/me").then((res) => setUser(res.data)).catch(() => {}),
+    []
+  );
+
   const logout = async () => {
     try {
       await api.post("/logout");
@@ -41,7 +43,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, refreshUser, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -25,3 +25,6 @@ backend/laravel-api/database/*.sqlite
 *.log
 .vscode/
 .idea/
+
+# Raw training data (download with backend/ai-service/dataset/build_djinni.py)
+backend/ai-service/dataset/raw/

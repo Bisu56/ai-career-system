@@ -75,7 +75,7 @@ class CompanyProfileController extends Controller
         }
 
         $validated = $request->validate([
-            'company_name'  => 'sometimes|string|max:255',
+            'company_name'  => 'sometimes|required|string|max:255',
             'description'   => 'sometimes|nullable|string|max:5000',
             'location'      => 'sometimes|nullable|string|max:255',
             'website'       => 'sometimes|nullable|url|max:500',

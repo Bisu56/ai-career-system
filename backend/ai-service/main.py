@@ -7,12 +7,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 import joblib
 import re
 
-from skills_db import SKILLS_DATABASE, CAREER_MAPPING, JOBS
+from skills_db import SKILLS_DATABASE, SKILL_ALIASES, CAREER_MAPPING, JOBS
 from nlp_resume_parser import extract_entities
 from resume_suggestions import generate_resume_suggestions
 from interview_questions import get_interview_questions
 from courses_db import COURSES
-from job_sources import fetch_all
+from job_sources import fetch_all, adzuna_enabled
 
 app = FastAPI()
 
@@ -36,14 +36,57 @@ class ResumeRequest(BaseModel):
         return v or ""
 
 
+MAX_TEXT_CHARS = 200_000
+MIN_WORDS = 25
+
+CASE_SENSITIVE_SKILLS = {
+    "r": re.compile(r'(?<![A-Za-z0-9])R(?![A-Za-z0-9&+#])'),
+    "express": re.compile(r'(?<![A-Za-z0-9])(?:Express(?:\.?js)?|express\.?js)(?![A-Za-z0-9])'),
+    "spring": re.compile(r'(?<![A-Za-z0-9])Spring(?: ?Boot| Framework| MVC)?(?![A-Za-z0-9])'),
+}
+
+SKILL_PATTERNS = {
+    skill: re.compile(
+        r'(?<![a-z0-9])(?:'
+        + '|'.join(re.escape(term.lower()) for term in [skill] + SKILL_ALIASES.get(skill, []))
+        + r')(?![a-z0-9])'
+    )
+    for skill in SKILLS_DATABASE
+    if skill not in CASE_SENSITIVE_SKILLS
+}
+
+CANONICAL_SKILLS = {
+    **{skill: skill for skill in SKILLS_DATABASE},
+    **{alias: skill for skill, aliases in SKILL_ALIASES.items() for alias in aliases},
+}
+
+
+def canonical_skills(skills):
+    result = []
+    for skill in skills:
+        name = CANONICAL_SKILLS.get(skill.strip().lower(), skill.strip().lower())
+        if name and name not in result:
+            result.append(name)
+    return result
+
+
 def extract_skills(text):
     text_lower = text.lower()
-    found_skills = []
-    for skill in SKILLS_DATABASE:
-        pattern = r'\b' + re.escape(skill.lower()) + r'\b'
-        if re.search(pattern, text_lower):
-            found_skills.append(skill)
-    return found_skills
+    return [
+        skill for skill in SKILLS_DATABASE
+        if (CASE_SENSITIVE_SKILLS[skill].search(text) if skill in CASE_SENSITIVE_SKILLS
+            else SKILL_PATTERNS[skill].search(text_lower))
+    ]
+
+
+def text_similarity(first, second):
+    if not first.strip() or not second.strip():
+        return 0.0
+    try:
+        vectors = TfidfVectorizer(stop_words='english').fit_transform([first, second])
+    except ValueError:
+        return 0.0
+    return float(cosine_similarity(vectors[0], vectors[1])[0][0])
 
 
 def predict_career_rule_based(skills):
@@ -59,10 +102,14 @@ def predict_career_rule_based(skills):
     return best_match
 
 
-def predict_career_ml(text):
+def rank_careers_ml(text, top=3):
     vector = vectorizer.transform([text])
-    prediction = model.predict(vector)
-    return prediction[0]
+    probabilities = model.predict_proba(vector)[0]
+    ranked = sorted(zip(model.classes_, probabilities), key=lambda x: x[1], reverse=True)
+    return [
+        {"career": career, "confidence": round(float(p) * 100, 2)}
+        for career, p in ranked[:top]
+    ]
 
 
 def calculate_resume_score(skills, career):
@@ -99,37 +146,41 @@ def recommend_jobs(user_skills):
 
 
 @app.post("/analyze")
-async def analyze(data: ResumeRequest):
-    resume_text = data.resume
-    job_text = data.job
-    
+def analyze(data: ResumeRequest):
+    resume_text = data.resume[:MAX_TEXT_CHARS]
+    job_text = data.job[:MAX_TEXT_CHARS]
+
     entities = extract_entities(resume_text)
     extracted_skills = extract_skills(resume_text)
-    
-    if job_text:
-        vectorizer_tfidf = TfidfVectorizer(stop_words='english')
-        vectors = vectorizer_tfidf.fit_transform([resume_text, job_text])
-        similarity = cosine_similarity(vectors[0], vectors[1])[0][0]
-        match_percentage = round(similarity * 100, 2)
-    else:
-        match_percentage = 0
-    
+
+    match_percentage = round(text_similarity(resume_text, job_text) * 100, 2) if job_text else 0
+
     rule_based_career = predict_career_rule_based(extracted_skills)
-    ml_career = predict_career_ml(resume_text)
-    
-    resume_score = calculate_resume_score(extracted_skills, rule_based_career)
-    missing_skills = get_missing_skills(extracted_skills, rule_based_career)
+    insufficient_text = len(resume_text.split()) < MIN_WORDS and not extracted_skills
+
+    if insufficient_text:
+        top_careers = []
+        ml_career = None
+    else:
+        top_careers = rank_careers_ml(" ".join([resume_text] + extracted_skills))
+        ml_career = top_careers[0]["career"]
+
+    resume_score = calculate_resume_score(extracted_skills, ml_career)
+    missing_skills = get_missing_skills(extracted_skills, ml_career)
     recommended_jobs = recommend_jobs(extracted_skills)
-    
+
     suggestions = generate_resume_suggestions(missing_skills, resume_score)
     courses = COURSES.get(ml_career, [])
     questions = get_interview_questions(ml_career)
-    
+
     return {
         "match_percentage": match_percentage,
         "resume_score": resume_score,
         "rule_based_career": rule_based_career,
         "ml_predicted_career": ml_career,
+        "career_confidence": top_careers[0]["confidence"] if top_careers else 0,
+        "top_careers": top_careers,
+        "insufficient_text": insufficient_text,
         "entities": entities,
         "extracted_skills": extracted_skills,
         "missing_skills": missing_skills,
@@ -150,10 +201,15 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.get("/jobs/sources")
+async def jobs_sources():
+    return {"adzuna_enabled": adzuna_enabled()}
+
+
 @app.get("/jobs/feed")
-async def jobs_feed(keyword: str = "python", limit: int = 50):
+def jobs_feed(keyword: str = "python", limit: int = 50):
     """Fetch live job listings from free public sources."""
-    jobs = fetch_all(keyword=keyword, limit=min(limit, 100))
+    jobs = fetch_all(keyword=keyword, limit=max(1, min(limit, 100)))
     return {"jobs": jobs}
 
 
@@ -176,7 +232,7 @@ class MatchRequest(BaseModel):
 
 
 @app.post("/match")
-async def match_applicant(data: MatchRequest):
+def match_applicant(data: MatchRequest):
     """
     Compare an applicant's profile against job requirements and return an AI match score.
 
@@ -186,8 +242,8 @@ async def match_applicant(data: MatchRequest):
 
     Returns a score 0-100 along with matched/missing skill lists.
     """
-    req_skills  = [s.lower() for s in data.required_skills]
-    appl_skills = [s.lower() for s in data.applicant_skills]
+    req_skills  = canonical_skills(data.required_skills)
+    appl_skills = canonical_skills(data.applicant_skills)
 
     # ── Skill component (70%) ──────────────────────────────────────
     if req_skills:
@@ -200,29 +256,19 @@ async def match_applicant(data: MatchRequest):
         skill_ratio = 0.0
 
     # ── TF-IDF text similarity component (30%) ────────────────────
-    text_similarity = 0.0
-    appl_text = data.applicant_text.strip()
-    job_text  = data.job_text.strip()
-
-    if appl_text and job_text:
-        try:
-            tfidf = TfidfVectorizer(stop_words="english")
-            vectors = tfidf.fit_transform([appl_text, job_text])
-            text_similarity = float(cosine_similarity(vectors[0], vectors[1])[0][0])
-        except Exception:
-            text_similarity = 0.0
+    similarity = text_similarity(data.applicant_text[:MAX_TEXT_CHARS], data.job_text[:MAX_TEXT_CHARS])
 
     # ── Combined score ─────────────────────────────────────────────
     if req_skills:
-        score = (skill_ratio * 0.70 + text_similarity * 0.30) * 100
+        score = (skill_ratio * 0.70 + similarity * 0.30) * 100
     else:
         # No required skills defined — rely entirely on text similarity
-        score = text_similarity * 100
+        score = similarity * 100
 
     return {
         "score": round(score, 2),
         "matched_skills": matched,
         "missing_skills": missing,
         "skill_ratio": round(skill_ratio * 100, 2),
-        "text_similarity": round(text_similarity * 100, 2),
+        "text_similarity": round(similarity * 100, 2),
     }

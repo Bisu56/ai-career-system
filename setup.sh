@@ -27,7 +27,7 @@ echo "==> Setting up Laravel API..."
 cd "$ROOT/backend/laravel-api"
 [ -d vendor ] || composer install
 [ -f .env ] || cp .env.example .env
-php artisan key:generate --force
+grep -q "^APP_KEY=base64" .env || php artisan key:generate --force
 grep -q "^JWT_SECRET=" .env || php artisan jwt:secret --force
 touch database/database.sqlite
 php artisan migrate --force

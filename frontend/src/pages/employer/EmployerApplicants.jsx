@@ -1,7 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import EmployerDashboardLayout from "../../layouts/EmployerDashboardLayout";
 import api from "../../services/api";
+import { downloadFile } from "../../services/download";
+import { formatDate } from "../../utils/format";
 import {
   FiArrowLeft,
   FiZap,
@@ -11,13 +13,15 @@ import {
   FiCheckCircle,
   FiXCircle,
   FiChevronDown,
+  FiDownload,
+  FiFileText,
 } from "react-icons/fi";
 
 // ── Status helpers ──────────────────────────────────────────────────────────
 const STATUS_META = {
   applied:     { label: "Applied",     color: "bg-blue-100 text-blue-700",    dot: "bg-blue-500" },
   shortlisted: { label: "Shortlisted", color: "bg-yellow-100 text-yellow-700", dot: "bg-yellow-500" },
-  interview:   { label: "Interview",   color: "bg-violet-100 text-violet-700", dot: "bg-violet-500" },
+  interview:   { label: "Interview",   color: "bg-brand-100 text-brand-700", dot: "bg-brand-500" },
   selected:    { label: "Selected",    color: "bg-green-100 text-green-700",   dot: "bg-green-500" },
   rejected:    { label: "Rejected",    color: "bg-red-100 text-red-600",       dot: "bg-red-500" },
   withdrawn:   { label: "Withdrawn",   color: "bg-slate-100 text-slate-600",   dot: "bg-slate-400" },
@@ -62,6 +66,7 @@ export default function EmployerApplicants() {
   const [scoring, setScoring]   = useState(false);
   const [updatingId, setUpdatingId] = useState(null);
   const [expanded, setExpanded] = useState(null);  // applicant id with expanded skills
+  const [actionError, setActionError] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -85,7 +90,7 @@ export default function EmployerApplicants() {
       await api.post(`/employer/jobs/${jobId}/applicants/score-all`);
       await load(); // reload with updated scores
     } catch (err) {
-      alert(err.response?.data?.error ?? "Failed to compute scores.");
+      setActionError(err.response?.data?.error ?? "Failed to compute scores.");
     } finally {
       setScoring(false);
     }
@@ -106,9 +111,21 @@ export default function EmployerApplicants() {
         ),
       }));
     } catch (err) {
-      alert(err.response?.data?.error ?? "Failed to update status.");
+      setActionError(err.response?.data?.error ?? "Failed to update status.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const handleDownload = async (app) => {
+    setActionError("");
+    try {
+      await downloadFile(
+        `/employer/jobs/${jobId}/applicants/${app.id}/resume`,
+        app.resume?.original_name || `${app.user?.name ?? "applicant"}-resume.pdf`
+      );
+    } catch (err) {
+      setActionError(err.message);
     }
   };
 
@@ -163,7 +180,7 @@ export default function EmployerApplicants() {
         <button
           onClick={handleScoreAll}
           disabled={scoring || applicants.length === 0}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:opacity-50"
         >
           {scoring ? (
             <><FiRefreshCw className="h-4 w-4 animate-spin" /> Scoring…</>
@@ -172,6 +189,18 @@ export default function EmployerApplicants() {
           )}
         </button>
       </div>
+
+      {actionError && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <FiAlertCircle className="h-4 w-4 shrink-0" /> {actionError}
+        </div>
+      )}
+
+      {job.moderation_status === "pending" && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <FiAlertCircle className="h-4 w-4 shrink-0" /> This job is waiting for admin review and is not visible to job seekers yet.
+        </div>
+      )}
 
       {/* Job required skills */}
       {job.required_skills?.length > 0 && (
@@ -207,32 +236,31 @@ export default function EmployerApplicants() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {applicants.map((app, idx) => (
-                <>
+                <Fragment key={app.id}>
                   <tr
-                    key={app.id}
                     className="hover:bg-slate-50 transition cursor-pointer"
                     onClick={() => setExpanded(expanded === app.id ? null : app.id)}
                   >
                     {/* Rank */}
                     <td className="px-5 py-4">
                       <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                        idx === 0 && hasScores ? "bg-amber-100 text-amber-700"
-                        : idx === 1 && hasScores ? "bg-slate-200 text-slate-600"
-                        : idx === 2 && hasScores ? "bg-orange-100 text-orange-600"
+                        app.rank === 1 ? "bg-amber-100 text-amber-700"
+                        : app.rank === 2 ? "bg-slate-200 text-slate-600"
+                        : app.rank === 3 ? "bg-orange-100 text-orange-600"
                         : "bg-slate-100 text-slate-500"
                       }`}>
-                        {hasScores && app.ai_match_score !== null ? app.rank ?? idx + 1 : idx + 1}
+                        {app.rank ?? idx + 1}
                       </span>
                     </td>
 
                     {/* Applicant info */}
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <span className="grid h-8 w-8 place-items-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">
+                        <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
                           {(app.user?.name ?? "?").charAt(0).toUpperCase()}
                         </span>
                         <div>
-                          <p className="text-sm font-medium text-slate-900">{app.user?.name ?? "—"}</p>
+                          <p className="text-sm font-medium text-slate-900">{app.user?.name ?? "-"}</p>
                           <p className="text-xs text-slate-400">{app.user?.email ?? ""}</p>
                         </div>
                         <FiChevronDown
@@ -248,11 +276,7 @@ export default function EmployerApplicants() {
 
                     {/* Applied date */}
                     <td className="whitespace-nowrap px-5 py-4 text-sm text-slate-500">
-                      {new Date(app.created_at).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
+                      {formatDate(app.created_at)}
                     </td>
 
                     {/* Status badge */}
@@ -272,7 +296,7 @@ export default function EmployerApplicants() {
                           className="rounded-lg border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-50"
                         >
                           {UPDATABLE_STATUSES.map((s) => (
-                            <option key={s} value={s}>
+                            <option key={s} value={s} disabled={s === "applied" && app.status !== "applied"}>
                               {s.charAt(0).toUpperCase() + s.slice(1)}
                             </option>
                           ))}
@@ -286,9 +310,50 @@ export default function EmployerApplicants() {
 
                   {/* Expanded row: skills breakdown + cover letter */}
                   {expanded === app.id && (
-                    <tr key={`${app.id}-detail`} className="bg-slate-50">
+                    <tr className="bg-slate-50">
                       <td colSpan={6} className="px-5 py-4">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                          <div>
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                              Resume
+                            </p>
+                            {app.resume ? (
+                              <div className="space-y-1.5 text-xs text-slate-600">
+                                <p className="flex items-center gap-1.5">
+                                  <FiFileText className="h-3.5 w-3.5 text-slate-400" />
+                                  {app.resume.original_name ?? "Pasted resume text"}
+                                </p>
+                                <p>
+                                  AI career fit: <span className="font-medium text-slate-800">{app.resume.career_prediction}</span>
+                                </p>
+                                <p>
+                                  Resume score: <span className="font-medium text-slate-800">{app.resume.resume_score}%</span>
+                                </p>
+                                {app.resume.skills?.length > 0 && (
+                                  <div className="flex flex-wrap gap-1 pt-1">
+                                    {app.resume.skills.map((s) => (
+                                      <span key={s} className="rounded-md bg-brand-50 px-2 py-0.5 text-xs text-brand-700">
+                                        {s}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                                {app.resume.file_path && (
+                                  <button
+                                    onClick={() => handleDownload(app)}
+                                    className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-100"
+                                  >
+                                    <FiDownload className="h-3.5 w-3.5" /> Download PDF
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-400 italic">
+                                The applicant had not uploaded a resume when they applied.
+                              </p>
+                            )}
+                          </div>
+
                           {/* AI Skills breakdown */}
                           <div>
                             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -296,7 +361,7 @@ export default function EmployerApplicants() {
                             </p>
                             {app.ai_match_score === null ? (
                               <p className="text-xs text-slate-400 italic">
-                                Click "Score with AI" to analyse this applicant.
+                                Scores are calculated automatically. Click "Re-score All" to refresh them.
                               </p>
                             ) : (
                               <div className="space-y-2">
@@ -351,7 +416,7 @@ export default function EmployerApplicants() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -361,7 +426,7 @@ export default function EmployerApplicants() {
             <div className="flex items-center gap-4 border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
               <span className="font-medium">Score guide:</span>
               <span><span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-1" />70%+ Strong match</span>
-              <span><span className="inline-block h-2 w-2 rounded-full bg-yellow-500 mr-1" />40–69% Partial match</span>
+              <span><span className="inline-block h-2 w-2 rounded-full bg-yellow-500 mr-1" />40-69% Partial match</span>
               <span><span className="inline-block h-2 w-2 rounded-full bg-red-400 mr-1" />&lt;40% Weak match</span>
             </div>
           )}

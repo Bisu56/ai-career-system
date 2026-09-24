@@ -16,6 +16,15 @@ class CompanyProfile extends Model
         'logo_path',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(function (CompanyProfile $profile) {
+            if ($profile->wasChanged('company_name') || $profile->wasRecentlyCreated) {
+                JobListing::where('employer_id', $profile->user_id)->update(['company' => $profile->company_name]);
+            }
+        });
+    }
+
     public function employer()
     {
         return $this->belongsTo(User::class, 'user_id');
