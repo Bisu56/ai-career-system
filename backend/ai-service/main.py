@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from fastapi import FastAPI
 from pydantic import BaseModel, field_validator
@@ -155,3 +155,74 @@ async def jobs_feed(keyword: str = "python", limit: int = 50):
     """Fetch live job listings from free public sources."""
     jobs = fetch_all(keyword=keyword, limit=min(limit, 100))
     return {"jobs": jobs}
+
+
+# ──────────────────────────────────────────────────────────────────
+# Employer / applicant matching endpoint
+# ──────────────────────────────────────────────────────────────────
+
+class MatchRequest(BaseModel):
+    applicant_skills: List[str] = []
+    required_skills: List[str] = []
+    applicant_text: Optional[str] = ""
+    job_text: Optional[str] = ""
+    experience_level: Optional[str] = None
+    education: Optional[str] = None
+
+    @field_validator("applicant_text", "job_text", mode="before")
+    @classmethod
+    def _none_to_empty(cls, v):
+        return v or ""
+
+
+@app.post("/match")
+async def match_applicant(data: MatchRequest):
+    """
+    Compare an applicant's profile against job requirements and return an AI match score.
+
+    Scoring strategy:
+      - 70%  skill overlap  (structured: required_skills vs applicant_skills)
+      - 30%  TF-IDF cosine similarity between applicant text and job text
+
+    Returns a score 0-100 along with matched/missing skill lists.
+    """
+    req_skills  = [s.lower() for s in data.required_skills]
+    appl_skills = [s.lower() for s in data.applicant_skills]
+
+    # ── Skill component (70%) ──────────────────────────────────────
+    if req_skills:
+        matched = [s for s in req_skills if s in appl_skills]
+        missing = [s for s in req_skills if s not in appl_skills]
+        skill_ratio = len(matched) / len(req_skills)
+    else:
+        matched = []
+        missing = []
+        skill_ratio = 0.0
+
+    # ── TF-IDF text similarity component (30%) ────────────────────
+    text_similarity = 0.0
+    appl_text = data.applicant_text.strip()
+    job_text  = data.job_text.strip()
+
+    if appl_text and job_text:
+        try:
+            tfidf = TfidfVectorizer(stop_words="english")
+            vectors = tfidf.fit_transform([appl_text, job_text])
+            text_similarity = float(cosine_similarity(vectors[0], vectors[1])[0][0])
+        except Exception:
+            text_similarity = 0.0
+
+    # ── Combined score ─────────────────────────────────────────────
+    if req_skills:
+        score = (skill_ratio * 0.70 + text_similarity * 0.30) * 100
+    else:
+        # No required skills defined — rely entirely on text similarity
+        score = text_similarity * 100
+
+    return {
+        "score": round(score, 2),
+        "matched_skills": matched,
+        "missing_skills": missing,
+        "skill_ratio": round(skill_ratio * 100, 2),
+        "text_similarity": round(text_similarity * 100, 2),
+    }

@@ -11,11 +11,17 @@ class JobApplication extends Model
         'job_listing_id',
         'status',
         'cover_letter',
+        'ai_match_score',
+        'matched_skills',
+        'missing_skills',
     ];
 
     protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'created_at'     => 'datetime',
+        'updated_at'     => 'datetime',
+        'ai_match_score' => 'float',
+        'matched_skills' => 'array',
+        'missing_skills' => 'array',
     ];
 
     public function user()
