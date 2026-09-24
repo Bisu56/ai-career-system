@@ -79,6 +79,30 @@ def skill_weight(skill):
     return 0.4 if skill in GENERIC_SKILLS else 1.0
 
 
+def score_skill_match(job_skills, user_skills):
+    """Weighted overlap between a job's skills and a candidate's.
+
+    Shared by the live-listing ranking and the employer-side applicant
+    ranking so a "72% match" means the same thing on both screens.
+    Returns (match, matched, missing).
+    """
+    job_set = {s.lower() for s in (job_skills or [])}
+    user = {s.lower() for s in (user_skills or [])}
+
+    matched = sorted(user & job_set)
+    missing = sorted(job_set - user)
+
+    matched_weight = sum(skill_weight(s) for s in matched)
+    job_weight = sum(skill_weight(s) for s in job_set)
+
+    # Depth carries most of the weight: covering all of a three-line job
+    # post is weaker evidence than sharing four specialised technologies
+    # with a detailed one.
+    coverage = matched_weight / job_weight if job_weight else 0.0
+    depth = min(matched_weight / 4.0, 1.0)
+    return 100 * (0.3 * coverage + 0.7 * depth), matched, missing
+
+
 # Job boards rarely name a city - they write "USA", "Europe" or "Anywhere". A
 # candidate in Austin, TX should still see a USA-wide listing flagged as
 # nearby, so a home region is expanded to the broader terms boards actually use.
@@ -305,22 +329,11 @@ def match_jobs(jobs, user_skills, career=None, search="", location="",
         if remote_only and not job.get("remote") and "remote" not in job.get("location", "").lower():
             continue
 
-        overlap = sorted(user & set(job_skills))
-        missing = sorted(set(job_skills) - user)
-
         # A listing that names one technology is not a 100% match just because
         # the candidate happens to know it, so coverage is tempered by how much
         # evidence there actually is: both the share of the job's requirements
         # covered and the absolute number of skills in common.
-        matched_weight = sum(skill_weight(s) for s in overlap)
-        job_weight = sum(skill_weight(s) for s in job_skills)
-
-        # Depth carries most of the weight: covering all of a three-line job
-        # post is weaker evidence than sharing four specialised technologies
-        # with a detailed one.
-        coverage = matched_weight / job_weight if job_weight else 0.0
-        depth = min(matched_weight / 4.0, 1.0)
-        match = 100 * (0.3 * coverage + 0.7 * depth)
+        match, overlap, missing = score_skill_match(job_skills, user)
 
         # Roles whose title echoes the predicted career path rank above generic
         # matches, so a Backend Developer sees backend work first.
