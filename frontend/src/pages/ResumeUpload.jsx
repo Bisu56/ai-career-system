@@ -3,12 +3,34 @@ import { useState } from "react";
 import api from "../services/api";
 import { Link } from "react-router-dom";
 import { FiUploadCloud, FiBriefcase, FiMapPin } from "react-icons/fi";
+import JobCarousel from "../components/JobCarousel";
 
 export default function ResumeUpload() {
   const [file, setFile] = useState(null);
   const [job, setJob] = useState("");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [liveJobs, setLiveJobs] = useState([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsError, setJobsError] = useState("");
+
+  // The analysis the upload just stored is the newest one, so /jobs ranks
+  // against it. A failure here must not hide the analysis itself.
+  const loadLiveJobs = async () => {
+    setJobsLoading(true);
+    setJobsError("");
+    try {
+      const { data } = await api.get("/jobs", { params: { limit: 20 } });
+      setLiveJobs(data.jobs || []);
+      if (!data.jobs?.length) {
+        setJobsError(data.message || "No live openings matched this resume.");
+      }
+    } catch {
+      setJobsError("Could not load live openings right now.");
+    } finally {
+      setJobsLoading(false);
+    }
+  };
 
   const handleUpload = async () => {
     if (!file) {
@@ -29,6 +51,7 @@ export default function ResumeUpload() {
       });
 
       setResult(response.data);
+      loadLiveJobs();
     } catch (error) {
       console.error(error);
       const message =
@@ -186,15 +209,32 @@ export default function ResumeUpload() {
                     </div>
                   ))}
                 </div>
-                <Link
-                  to="/jobs"
-                  className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
-                >
-                  <FiBriefcase className="h-4 w-4" />
-                  Browse live openings matched to this resume
-                </Link>
               </Section>
             )}
+
+            <Section title="Live Openings Matched To This Resume">
+              {jobsLoading && (
+                <p className="text-sm text-slate-500">
+                  Finding openings that match your skills...
+                </p>
+              )}
+
+              {!jobsLoading && jobsError && (
+                <p className="text-sm text-slate-500">{jobsError}</p>
+              )}
+
+              {!jobsLoading && liveJobs.length > 0 && (
+                <JobCarousel jobs={liveJobs} />
+              )}
+
+              <Link
+                to="/jobs"
+                className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+              >
+                <FiBriefcase className="h-4 w-4" />
+                Open the full job portal
+              </Link>
+            </Section>
 
             {result.recommended_courses?.length > 0 && (
               <Section title="Recommended Courses">

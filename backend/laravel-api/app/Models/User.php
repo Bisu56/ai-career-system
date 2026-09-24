@@ -23,6 +23,39 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 
+    public const ROLES = ['seeker', 'employer', 'admin'];
+
+    public function isEmployer(): bool
+    {
+        return $this->role === 'employer';
+    }
+
+    public function isAdmin(): bool
+    {
+        // is_admin predates the role column; either one grants admin access.
+        return $this->role === 'admin' || (bool) $this->is_admin;
+    }
+
+    public function company()
+    {
+        return $this->hasOne(Company::class);
+    }
+
+    public function resumes()
+    {
+        return $this->hasMany(Resume::class);
+    }
+
+    public function applications()
+    {
+        return $this->hasMany(Application::class);
+    }
+
+    public function savedJobs()
+    {
+        return $this->hasMany(SavedJob::class);
+    }
+
     /**
      * The attributes that are mass assignable.
      *
@@ -33,6 +66,9 @@ class User extends Authenticatable implements JWTSubject
         'email',
         'password',
         'is_admin',
+        'role',
+        'is_approved',
+        'is_blocked',
     ];
 
     /**
@@ -56,6 +92,8 @@ class User extends Authenticatable implements JWTSubject
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'is_approved' => 'boolean',
+            'is_blocked' => 'boolean',
         ];
     }
 }

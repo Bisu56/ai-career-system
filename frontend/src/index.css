@@ -12,3 +12,33 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     Helvetica, Arial, sans-serif;
 }
+
+/* Job carousel: the incoming card slides in from the side it came from. */
+@keyframes job-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@keyframes job-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+.animate-job-in-right {
+  animation: job-in-right 220ms ease-out;
+}
+
+.animate-job-in-left {
+  animation: job-in-left 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-job-in-right,
+  .animate-job-in-left {
+    animation: none;
+  }
+}

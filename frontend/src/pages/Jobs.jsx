@@ -10,7 +10,10 @@ import {
   FiExternalLink,
   FiRefreshCw,
   FiDollarSign,
+  FiList,
+  FiCreditCard,
 } from "react-icons/fi";
+import JobCarousel from "../components/JobCarousel";
 
 const matchColor = (m) =>
   m >= 60
@@ -45,6 +48,8 @@ export default function Jobs() {
   const [location, setLocation] = useState("");
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [minMatch, setMinMatch] = useState(0);
+  // "cards" walks the deck one job at a time; "list" is the full scroll.
+  const [view, setView] = useState("cards");
 
   // Filters can be passed explicitly so a button can apply a new value and
   // fetch in one go, instead of waiting a render for state to settle.
@@ -118,14 +123,37 @@ export default function Jobs() {
             in your resume.
           </p>
         </div>
-        <button
-          onClick={() => fetchJobs({ refresh: true })}
-          disabled={refreshing}
-          className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
-        >
-          <FiRefreshCw className={refreshing ? "animate-spin" : ""} />
-          {refreshing ? "Fetching..." : "Refresh"}
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border border-slate-200 p-0.5">
+            {[
+              { id: "cards", label: "Cards", Icon: FiCreditCard },
+              { id: "list", label: "List", Icon: FiList },
+            ].map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setView(option.id)}
+                aria-pressed={view === option.id}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  view === option.id
+                    ? "bg-indigo-600 text-white"
+                    : "text-slate-600 hover:bg-slate-50"
+                }`}
+              >
+                <option.Icon className="h-4 w-4" />
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => fetchJobs({ refresh: true })}
+            disabled={refreshing}
+            className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
+          >
+            <FiRefreshCw className={refreshing ? "animate-spin" : ""} />
+            {refreshing ? "Fetching..." : "Refresh"}
+          </button>
+        </div>
       </div>
 
       {resume && (
@@ -275,7 +303,9 @@ export default function Jobs() {
         </div>
       )}
 
-      <div className="space-y-3">
+      {view === "cards" && jobs.length > 0 && <JobCarousel jobs={jobs} />}
+
+      <div className={view === "cards" ? "hidden" : "space-y-3"}>
         {jobs.map((job) => (
           <article
             key={job.id}
@@ -367,7 +397,8 @@ export default function Jobs() {
 
       {!loading && jobs.length > 0 && (
         <p className="mt-6 text-center text-xs text-slate-400">
-          Showing {jobs.length} of {total || jobs.length} matched roles
+          {view === "cards" ? "Browsing" : "Showing"} {jobs.length} of{" "}
+          {total || jobs.length} matched roles
           {meta?.cached ? " · from cache" : ""}
         </p>
       )}
