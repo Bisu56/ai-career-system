@@ -1,159 +1,197 @@
-import DashboardLayout from "../../layouts/DashboardLayout";
+import AdminLayout from "../../layouts/AdminLayout";
 import { useEffect, useState } from "react";
 import api from "../../services/api";
-import { FiUsers, FiFileText, FiBriefcase, FiTrendingUp, FiRefreshCw } from "react-icons/fi";
-
-const STAT_CARDS = [
-  { key: "total_users", label: "Total Users", icon: FiUsers, tint: "bg-indigo-50 text-indigo-600" },
-  { key: "total_analyses", label: "Total Analyses", icon: FiFileText, tint: "bg-green-50 text-green-600" },
-  { key: "average_score", label: "Avg Resume Score", icon: FiTrendingUp, tint: "bg-violet-50 text-violet-600", suffix: "%" },
-  { key: "total_jobs", label: "Job Listings", icon: FiBriefcase, tint: "bg-amber-50 text-amber-600" },
-];
+import {
+  FiUsers,
+  FiFileText,
+  FiBriefcase,
+  FiTrendingUp,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiUserCheck,
+  FiActivity,
+} from "react-icons/fi";
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({
-    total_users: 0,
-    total_analyses: 0,
-    average_score: 0,
-    total_jobs: 0,
-  });
-  const [careerDist, setCareerDist] = useState([]);
-  const [recentAnalyses, setRecentAnalyses] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
-  const fetchData = async () => {
+  const fetchStats = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const [adminRes, jobsRes] = await Promise.all([
-        api.get("/admin/analytics"),
-        api.get("/jobs", { params: { q: "" } }),
-      ]);
-      setStats({
-        ...stats,
-        ...adminRes.data,
-        total_jobs: jobsRes.data?.total ?? jobsRes.data?.jobs?.length ?? 0,
-      });
-      setCareerDist(adminRes.data.career_distribution || []);
-      setRecentAnalyses(adminRes.data.recent_analyses || []);
+      const res = await api.get("/admin/dashboard");
+      setStats(res.data);
     } catch (err) {
-      console.error("Failed to load admin stats", err);
+      setError("Failed to load dashboard stats.");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRefreshJobs = async () => {
-    setRefreshing(true);
-    try {
-      await api.post("/jobs/refresh", { keyword: "python" });
-      await fetchData();
-    } catch (err) {
-      console.error("Failed to refresh jobs", err);
-      alert("Failed to refresh job listings");
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   useEffect(() => {
-    fetchData();
+    fetchStats();
   }, []);
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <AdminLayout>
         <div className="flex h-64 items-center justify-center">
-          <p className="text-slate-500">Loading...</p>
+          <p className="text-slate-500">Loading dashboard…</p>
         </div>
-      </DashboardLayout>
+      </AdminLayout>
     );
   }
 
+  if (error) {
+    return (
+      <AdminLayout>
+        <div className="rounded-xl bg-red-50 p-6 text-center text-red-600">{error}</div>
+      </AdminLayout>
+    );
+  }
+
+  const statCards = [
+    {
+      label: "Total Users",
+      value: stats.total_users,
+      icon: FiUsers,
+      tint: "bg-indigo-50 text-indigo-600",
+    },
+    {
+      label: "Job Seekers",
+      value: stats.total_job_seekers,
+      icon: FiActivity,
+      tint: "bg-blue-50 text-blue-600",
+    },
+    {
+      label: "Employers",
+      value: stats.total_employers,
+      icon: FiUserCheck,
+      tint: "bg-teal-50 text-teal-600",
+    },
+    {
+      label: "Pending Approvals",
+      value: stats.pending_employers,
+      icon: FiAlertCircle,
+      tint: stats.pending_employers > 0 ? "bg-amber-50 text-amber-600" : "bg-slate-50 text-slate-500",
+      badge: stats.pending_employers > 0,
+    },
+    {
+      label: "Total Jobs",
+      value: stats.total_jobs,
+      icon: FiBriefcase,
+      tint: "bg-violet-50 text-violet-600",
+    },
+    {
+      label: "Active Jobs",
+      value: stats.active_jobs,
+      icon: FiCheckCircle,
+      tint: "bg-green-50 text-green-600",
+    },
+    {
+      label: "Pending Job Review",
+      value: stats.pending_jobs,
+      icon: FiAlertCircle,
+      tint: stats.pending_jobs > 0 ? "bg-orange-50 text-orange-600" : "bg-slate-50 text-slate-500",
+      badge: stats.pending_jobs > 0,
+    },
+    {
+      label: "Total Analyses",
+      value: stats.total_analyses,
+      icon: FiFileText,
+      tint: "bg-pink-50 text-pink-600",
+    },
+    {
+      label: "Avg Resume Score",
+      value: `${stats.average_score}%`,
+      icon: FiTrendingUp,
+      tint: "bg-cyan-50 text-cyan-600",
+    },
+    {
+      label: "Applications",
+      value: stats.total_applications,
+      icon: FiBriefcase,
+      tint: "bg-rose-50 text-rose-600",
+    },
+  ];
+
   return (
-    <DashboardLayout>
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-500">System-wide overview and controls</p>
-        </div>
-        <button
-          onClick={handleRefreshJobs}
-          disabled={refreshing}
-          className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          <FiRefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh Jobs
-        </button>
+    <AdminLayout>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900">Admin Dashboard</h1>
+        <p className="mt-1 text-sm text-slate-500">System-wide overview and controls</p>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-4">
-        {STAT_CARDS.map(({ key, label, icon: Icon, tint, suffix = "" }) => (
-          <div key={key} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        {statCards.map(({ label, value, icon: Icon, tint, badge }) => (
+          <div
+            key={label}
+            className="relative rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+          >
+            {badge && (
+              <span className="absolute top-3 right-3 h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse" />
+            )}
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium text-slate-500">{label}</span>
               <span className={`grid h-9 w-9 place-items-center rounded-lg ${tint}`}>
                 <Icon className="h-5 w-5" />
               </span>
             </div>
-            <p className="mt-3 truncate text-2xl font-bold text-slate-900">
-              {stats[key]}{suffix}
-            </p>
+            <p className="mt-3 text-2xl font-bold text-slate-900">{value}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-base font-semibold text-slate-900">Career Distribution</h3>
-          {careerDist.length > 0 ? (
-            <div className="space-y-3">
-              {careerDist.map((item, idx) => (
-                <div key={idx} className="flex items-center gap-3">
-                  <span className="w-40 truncate text-sm font-medium text-slate-700">{item.career_prediction}</span>
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-600 transition-all duration-500"
-                      style={{ width: `${(item.count / Math.max(...careerDist.map(d => d.count))) * 100}%` }}
-                    />
-                  </div>
-                  <span className="w-16 text-right text-sm text-slate-600">{item.count}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="py-10 text-center text-sm text-slate-500">No career data yet.</p>
-          )}
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-base font-semibold text-slate-900">Recent Analyses</h3>
-          {recentAnalyses.length > 0 ? (
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {recentAnalyses.map((analysis) => (
-                <div key={analysis.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="rounded-md bg-violet-100 px-2 py-1 text-xs font-medium text-violet-800">
-                      {analysis.career_prediction}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-slate-900">{analysis.user?.name || "Unknown"}</p>
-                      <p className="truncate text-xs text-slate-500">{analysis.user?.email || ""}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-slate-600">
-                    <span>Score: <span className="font-semibold">{analysis.resume_score}%</span></span>
-                    <span className="text-xs text-slate-400">
-                      {new Date(analysis.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="py-10 text-center text-sm text-slate-500">No recent analyses.</p>
-          )}
-        </div>
+      {/* Quick action links */}
+      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <QuickAction
+          to="/admin/employers"
+          label="Review Pending Employers"
+          count={stats.pending_employers}
+          color="amber"
+        />
+        <QuickAction
+          to="/admin/jobs"
+          label="Review Pending Jobs"
+          count={stats.pending_jobs}
+          color="orange"
+        />
+        <QuickAction
+          to="/admin/users"
+          label="Manage Users"
+          count={stats.total_users}
+          color="indigo"
+        />
+        <QuickAction
+          to="/admin/feed"
+          label="Refresh Job Feed"
+          count={null}
+          color="teal"
+        />
       </div>
-    </DashboardLayout>
+    </AdminLayout>
+  );
+}
+
+function QuickAction({ to, label, count, color }) {
+  const colorMap = {
+    amber:  "bg-amber-50  hover:bg-amber-100  text-amber-800  border-amber-200",
+    orange: "bg-orange-50 hover:bg-orange-100 text-orange-800 border-orange-200",
+    indigo: "bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border-indigo-200",
+    teal:   "bg-teal-50   hover:bg-teal-100   text-teal-800   border-teal-200",
+  };
+  return (
+    <a
+      href={to}
+      className={`flex items-center justify-between rounded-xl border p-4 transition ${colorMap[color]}`}
+    >
+      <span className="text-sm font-semibold">{label}</span>
+      {count !== null && (
+        <span className="text-lg font-bold">{count}</span>
+      )}
+    </a>
   );
 }

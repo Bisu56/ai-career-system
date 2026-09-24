@@ -8,11 +8,27 @@ use Illuminate\Support\Str;
 
 class EmployerJobController extends Controller
 {
-    /** Guard: only employers may call these actions. */
+    /** Guard: only approved employers may call these actions. */
     private function authorizeEmployer()
     {
-        if (!auth('api')->user()?->is_employer) {
+        $user = auth('api')->user();
+
+        if (!$user?->is_employer) {
             abort(response()->json(['error' => 'Forbidden: employer access required.'], 403));
+        }
+
+        if ($user->employer_status === 'pending') {
+            abort(response()->json([
+                'error'           => 'Your employer account is pending admin approval.',
+                'employer_status' => 'pending',
+            ], 403));
+        }
+
+        if ($user->employer_status === 'rejected') {
+            abort(response()->json([
+                'error'           => 'Your employer account has been rejected.',
+                'employer_status' => 'rejected',
+            ], 403));
         }
     }
 
@@ -42,7 +58,6 @@ class EmployerJobController extends Controller
 
     /**
      * GET /api/employer/jobs/{id}
-     * Returns a single job owned by the authenticated employer.
      */
     public function show(int $id)
     {
@@ -57,8 +72,7 @@ class EmployerJobController extends Controller
 
     /**
      * POST /api/employer/jobs
-     * Creates a new job listing for the authenticated employer.
-     * Jobs are created as active and use the employer's company name.
+     * New jobs start with moderation_status=pending — admin must approve before visible.
      */
     public function store(Request $request)
     {
@@ -79,17 +93,17 @@ class EmployerJobController extends Controller
             'application_deadline' => 'nullable|date|after_or_equal:today',
         ]);
 
-        // Derive company name from profile, or fall back to user's name
         $companyName = $user->companyProfile?->company_name ?? $user->name;
 
         $job = JobListing::create(array_merge($validated, [
-            'employer_id' => $user->id,
-            'company'     => $companyName,
-            'source'      => 'employer',
-            'external_id' => 'emp-' . $user->id . '-' . Str::uuid(),
-            'url'         => config('app.url', 'http://localhost:8000'),
-            'is_active'   => true,
-            'posted_at'   => now(),
+            'employer_id'       => $user->id,
+            'company'           => $companyName,
+            'source'            => 'employer',
+            'external_id'       => 'emp-' . $user->id . '-' . Str::uuid(),
+            'url'               => config('app.url', 'http://localhost:8000'),
+            'is_active'         => true,
+            'posted_at'         => now(),
+            'moderation_status' => 'pending', // waits for admin approval
         ]));
 
         return response()->json($job->loadCount('applications'), 201);
@@ -97,7 +111,7 @@ class EmployerJobController extends Controller
 
     /**
      * PATCH /api/employer/jobs/{id}
-     * Updates a job listing — only the owning employer may update.
+     * When employer edits a previously-approved job, reset to pending moderation.
      */
     public function update(Request $request, int $id)
     {
@@ -119,6 +133,13 @@ class EmployerJobController extends Controller
             'is_active'            => 'sometimes|boolean',
         ]);
 
+        // Content edits on an approved job push it back to pending
+        $contentFields = ['title', 'description', 'required_skills', 'experience_level', 'education'];
+        $hasContentEdit = !empty(array_intersect(array_keys($validated), $contentFields));
+        if ($hasContentEdit && $job->moderation_status === 'approved') {
+            $validated['moderation_status'] = 'pending';
+        }
+
         $job->update($validated);
 
         return response()->json($job->fresh()->loadCount('applications'));
@@ -126,7 +147,6 @@ class EmployerJobController extends Controller
 
     /**
      * PATCH /api/employer/jobs/{id}/close
-     * Closes a job listing — no further applications will be accepted.
      */
     public function close(int $id)
     {
@@ -145,8 +165,6 @@ class EmployerJobController extends Controller
 
     /**
      * DELETE /api/employer/jobs/{id}
-     * Permanently deletes the job (and cascade-deletes applications).
-     * Only allowed if the job belongs to the authenticated employer.
      */
     public function destroy(int $id)
     {
