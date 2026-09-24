@@ -22,29 +22,31 @@ class AuthController extends Controller
                 'regex:/[A-Z]/',
                 'regex:/[0-9]/',
             ],
+            'is_employer' => 'sometimes|boolean',
         ], [
             'password.regex' => 'Password must contain at least one uppercase letter and one number.',
         ]);
 
         $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            'name'        => $validated['name'],
+            'email'       => $validated['email'],
+            'password'    => Hash::make($validated['password']),
+            'is_employer' => $validated['is_employer'] ?? false,
         ]);
 
         $token = auth('api')->login($user);
 
         return response()->json([
             'message' => 'User created',
-            'token' => $token,
-            'user' => $user,
+            'token'   => $token,
+            'user'    => $user,
         ], 201);
     }
 
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => 'required|string|email',
+            'email'    => 'required|string|email',
             'password' => 'required|string',
         ]);
 
@@ -54,7 +56,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user' => auth('api')->user()
+            'user'  => auth('api')->user(),
         ]);
     }
 

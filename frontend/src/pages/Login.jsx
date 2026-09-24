@@ -19,7 +19,12 @@ export default function Login() {
     try {
       const response = await api.post("/login", { email, password });
       login(response.data.token, response.data.user);
-      navigate("/dashboard");
+      // Redirect to the correct dashboard based on role
+      if (response.data.user?.is_employer) {
+        navigate("/employer/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     } catch (err) {
       if (err.response?.status === 401) {
         setError("Invalid email or password.");

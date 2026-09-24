@@ -11,100 +11,96 @@ import JobDetail from "../pages/JobDetail";
 import Applications from "../pages/Applications";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminProtectedRoute from "./AdminProtectedRoute";
+import EmployerProtectedRoute from "./EmployerProtectedRoute";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
+
+// Employer pages
+import EmployerDashboard from "../pages/employer/EmployerDashboard";
+import CompanyProfile from "../pages/employer/CompanyProfile";
+import PostJob from "../pages/employer/PostJob";
+import EmployerJobs from "../pages/employer/EmployerJobs";
+import EmployerApplicants from "../pages/employer/EmployerApplicants";
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public routes */}
         <Route
           path="/"
-          element={
-            <MainLayout>
-              <Home />
-            </MainLayout>
-          }
+          element={<MainLayout><Home /></MainLayout>}
         />
         <Route
           path="/login"
-          element={
-            <MainLayout>
-              <Login />
-            </MainLayout>
-          }
+          element={<MainLayout><Login /></MainLayout>}
         />
         <Route
           path="/register"
-          element={
-            <MainLayout>
-              <Register />
-            </MainLayout>
-          }
+          element={<MainLayout><Register /></MainLayout>}
         />
+
+        {/* Job seeker protected routes */}
         <Route
           path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
+          element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
         />
         <Route
           path="/upload"
-          element={
-            <ProtectedRoute>
-              <ResumeUpload />
-            </ProtectedRoute>
-          }
+          element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>}
         />
         <Route
           path="/history"
-          element={
-            <ProtectedRoute>
-              <History />
-            </ProtectedRoute>
-          }
+          element={<ProtectedRoute><History /></ProtectedRoute>}
         />
         <Route
           path="/jobs"
-          element={
-            <ProtectedRoute>
-              <Jobs />
-            </ProtectedRoute>
-          }
+          element={<ProtectedRoute><Jobs /></ProtectedRoute>}
         />
         <Route
           path="/jobs/:id"
-          element={
-            <ProtectedRoute>
-              <JobDetail />
-            </ProtectedRoute>
-          }
+          element={<ProtectedRoute><JobDetail /></ProtectedRoute>}
         />
         <Route
           path="/applications"
-          element={
-            <ProtectedRoute>
-              <Applications />
-            </ProtectedRoute>
-          }
+          element={<ProtectedRoute><Applications /></ProtectedRoute>}
         />
+
+        {/* Admin routes */}
         <Route
           path="/admin"
-          element={
-            <AdminProtectedRoute>
-              <AdminDashboard />
-            </AdminProtectedRoute>
-          }
+          element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>}
         />
         <Route
           path="/admin/users"
-          element={
-            <AdminProtectedRoute>
-              <AdminUsers />
-            </AdminProtectedRoute>
-          }
+          element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>}
+        />
+
+        {/* Employer routes */}
+        <Route
+          path="/employer/dashboard"
+          element={<EmployerProtectedRoute><EmployerDashboard /></EmployerProtectedRoute>}
+        />
+        <Route
+          path="/employer/profile"
+          element={<EmployerProtectedRoute><CompanyProfile /></EmployerProtectedRoute>}
+        />
+        <Route
+          path="/employer/jobs"
+          element={<EmployerProtectedRoute><EmployerJobs /></EmployerProtectedRoute>}
+        />
+        {/* "new" before :id so it isn't treated as an id param */}
+        <Route
+          path="/employer/jobs/new"
+          element={<EmployerProtectedRoute><PostJob /></EmployerProtectedRoute>}
+        />
+        <Route
+          path="/employer/jobs/:id/edit"
+          element={<EmployerProtectedRoute><PostJob /></EmployerProtectedRoute>}
+        />
+        <Route
+          path="/employer/jobs/:jobId/applicants"
+          element={<EmployerProtectedRoute><EmployerApplicants /></EmployerProtectedRoute>}
         />
       </Routes>
     </BrowserRouter>

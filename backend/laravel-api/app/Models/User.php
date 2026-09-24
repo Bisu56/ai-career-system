@@ -33,6 +33,7 @@ class User extends Authenticatable implements JWTSubject
         'email',
         'password',
         'is_admin',
+        'is_employer',
     ];
 
     /**
@@ -54,8 +55,9 @@ class User extends Authenticatable implements JWTSubject
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_admin' => 'boolean',
+            'password'          => 'hashed',
+            'is_admin'          => 'boolean',
+            'is_employer'       => 'boolean',
         ];
     }
 
@@ -67,5 +69,15 @@ class User extends Authenticatable implements JWTSubject
     public function applications()
     {
         return $this->hasMany(JobApplication::class);
+    }
+
+    public function companyProfile()
+    {
+        return $this->hasOne(CompanyProfile::class);
+    }
+
+    public function jobListings()
+    {
+        return $this->hasMany(JobListing::class, 'employer_id');
     }
 }
