@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\JobApplication;
 use App\Models\JobListing;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 
 class ApplicationController extends Controller
@@ -14,13 +15,32 @@ class ApplicationController extends Controller
      */
     public function apply(Request $request, int $jobId)
     {
-        $job = JobListing::findOrFail($jobId);
+        $user = auth('api')->user();
+
+        if ($user->is_employer || $user->is_admin) {
+            return response()->json(['error' => 'Only job seeker accounts can apply for jobs.'], 403);
+        }
+
+        $job = JobListing::where('id', $jobId)
+            ->where('moderation_status', 'approved')
+            ->employerInGoodStanding()
+            ->first();
+
+        if (!$job) {
+            return response()->json(['error' => 'Job not found.'], 404);
+        }
 
         if (!$job->is_active) {
             return response()->json(['error' => 'This job is no longer accepting applications.'], 422);
         }
 
-        $user = auth('api')->user();
+        if (!$job->acceptsApplications()) {
+            return response()->json(['error' => 'This listing comes from an external job board. Please apply on the original posting.'], 422);
+        }
+
+        if ($job->deadlinePassed()) {
+            return response()->json(['error' => 'The application deadline for this job has passed.'], 422);
+        }
 
         $existing = JobApplication::where('user_id', $user->id)
             ->where('job_listing_id', $jobId)
@@ -34,12 +54,17 @@ class ApplicationController extends Controller
             'cover_letter' => 'nullable|string|max:5000',
         ]);
 
-        $application = JobApplication::create([
-            'user_id'        => $user->id,
-            'job_listing_id' => $jobId,
-            'status'         => 'applied',
-            'cover_letter'   => $request->input('cover_letter'),
-        ]);
+        try {
+            $application = JobApplication::create([
+                'user_id'        => $user->id,
+                'job_listing_id' => $jobId,
+                'resume_id'      => ($user->latestUploadedResume ?? $user->latestResume)?->id,
+                'status'         => 'applied',
+                'cover_letter'   => $request->input('cover_letter'),
+            ]);
+        } catch (UniqueConstraintViolationException $e) {
+            return response()->json(['error' => 'You have already applied for this job.'], 409);
+        }
 
         return response()->json($application->load('job'), 201);
     }
@@ -50,7 +75,7 @@ class ApplicationController extends Controller
     public function index()
     {
         $applications = JobApplication::where('user_id', auth('api')->id())
-            ->with('job')
+            ->with(['job', 'resume:' . JobApplication::RESUME_SUMMARY])
             ->orderByDesc('created_at')
             ->get();
 
@@ -64,7 +89,7 @@ class ApplicationController extends Controller
     {
         $application = JobApplication::where('id', $id)
             ->where('user_id', auth('api')->id())
-            ->with('job')
+            ->with(['job', 'resume:' . JobApplication::RESUME_SUMMARY])
             ->firstOrFail();
 
         return response()->json($application);

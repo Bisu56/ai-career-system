@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -37,6 +38,11 @@ class User extends Authenticatable implements JWTSubject
         ];
     }
 
+    protected function email(): Attribute
+    {
+        return Attribute::make(set: fn ($value) => strtolower(trim((string) $value)));
+    }
+
     /** True only when user is an employer AND admin-approved. */
     public function isApprovedEmployer(): bool
     {
@@ -48,6 +54,16 @@ class User extends Authenticatable implements JWTSubject
     public function savedJobs()
     {
         return $this->belongsToMany(JobListing::class, 'saved_jobs')->withTimestamps();
+    }
+
+    public function latestResume()
+    {
+        return $this->hasOne(Resume::class)->latestOfMany();
+    }
+
+    public function latestUploadedResume()
+    {
+        return $this->hasOne(Resume::class)->ofMany(['id' => 'max'], fn ($q) => $q->whereNotNull('file_path'));
     }
 
     public function applications()

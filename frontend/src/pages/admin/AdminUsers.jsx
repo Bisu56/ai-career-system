@@ -1,91 +1,221 @@
-import DashboardLayout from "../../layouts/DashboardLayout";
-import { useEffect, useState } from "react";
+import AdminLayout from "../../layouts/AdminLayout";
+import { useEffect, useState, useCallback, useRef } from "react";
 import api from "../../services/api";
-import { FiSearch, FiTrash2, FiUserCheck, FiUserX, FiEdit2 } from "react-icons/fi";
+import useDebouncedValue from "../../hooks/useDebouncedValue";
+import Pagination from "../../components/Pagination";
+import { REVIEW_STATUS_COLORS } from "../../constants/jobs";
+import { formatDate } from "../../utils/format";
+import {
+  FiSearch,
+  FiTrash2,
+  FiShield,
+  FiUserCheck,
+  FiUserX,
+  FiAlertCircle,
+  FiRefreshCw,
+} from "react-icons/fi";
+
+const ROLE_TABS = [
+  { label: "All", value: "" },
+  { label: "Job Seekers", value: "seeker" },
+  { label: "Employers", value: "employer" },
+  { label: "Admins", value: "admin" },
+];
+
+const STATUS_TABS = [
+  { label: "All", value: "" },
+  { label: "Active", value: "active" },
+  { label: "Deactivated", value: "inactive" },
+];
+
+function RoleBadge({ user }) {
+  if (user.is_admin) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+        <FiShield className="h-3 w-3" /> Admin
+      </span>
+    );
+  }
+  if (user.is_employer) {
+    return (
+      <div className="flex flex-wrap items-center gap-1">
+        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+          Employer
+        </span>
+        <span
+          className={`rounded-full px-2 py-0.5 text-xs font-medium capitalize ${
+            REVIEW_STATUS_COLORS[user.employer_status] ?? "bg-slate-100 text-slate-600"
+          }`}
+        >
+          {user.employer_status}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+      Job Seeker
+    </span>
+  );
+}
+
+function StatusBadge({ active }) {
+  return active ? (
+    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+      <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> Active
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-600">
+      <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Deactivated
+    </span>
+  );
+}
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const latestRequest = useRef(0);
+  const [role, setRole] = useState("");
+  const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [busyId, setBusyId] = useState(null);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const perPage = 10;
-  const [deletingId, setDeletingId] = useState(null);
-  const [togglingId, setTogglingId] = useState(null);
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
+    const requestId = ++latestRequest.current;
     setLoading(true);
+    setError("");
     try {
       const res = await api.get("/admin/users", {
-        params: { page, per_page: perPage, search },
+        params: { page, per_page: perPage, search: debouncedSearch, role, status },
       });
-      setUsers(res.data.data || res.data);
+      if (requestId !== latestRequest.current) return;
+      setUsers(res.data.data ?? []);
       setTotalPages(res.data.last_page || 1);
-    } catch (err) {
-      console.error("Failed to load users", err);
+      setTotal(res.data.total ?? 0);
+    } catch {
+      setError("Failed to load users.");
     } finally {
-      setLoading(false);
+      if (requestId === latestRequest.current) setLoading(false);
     }
-  };
+  }, [page, debouncedSearch, role, status]);
 
   useEffect(() => {
     fetchUsers();
-  }, [page, search]);
+  }, [fetchUsers]);
 
-  const handleDelete = async (id, name) => {
-    if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
-    setDeletingId(id);
+  const runAction = async (user, request, successMessage, onSuccess) => {
+    setBusyId(user.id);
+    setError("");
+    setMessage("");
     try {
-      await api.delete(`/admin/users/${id}`);
-      setUsers(users.filter((u) => u.id !== id));
+      const res = await request();
+      if (onSuccess) {
+        onSuccess(res);
+      } else {
+        const updated = res.data.user ?? res.data;
+        setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, ...updated } : u)));
+      }
+      setMessage(res.data.message ?? successMessage);
     } catch (err) {
-      console.error("Delete failed", err);
-      alert("Failed to delete user");
+      setError(err.response?.data?.error ?? "Action failed. Please try again.");
     } finally {
-      setDeletingId(null);
+      setBusyId(null);
     }
   };
 
-  const handleToggleAdmin = async (user) => {
-    setTogglingId(user.id);
-    try {
-      await api.patch(`/admin/users/${user.id}`, { is_admin: !user.is_admin });
-      setUsers(users.map((u) => (u.id === user.id ? { ...u, is_admin: !u.is_admin } : u)));
-    } catch (err) {
-      console.error("Toggle admin failed", err);
-      alert("Failed to update user role");
-    } finally {
-      setTogglingId(null);
-    }
-  };
-
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="flex h-64 items-center justify-center">
-          <p className="text-slate-500">Loading...</p>
-        </div>
-      </DashboardLayout>
+  const handleToggleAdmin = (user) =>
+    runAction(
+      user,
+      () => api.patch(`/admin/users/${user.id}`, { is_admin: !user.is_admin }),
+      user.is_admin ? `Admin rights removed from "${user.name}".` : `"${user.name}" is now an admin.`
     );
-  }
+
+  const handleToggleActive = (user) =>
+    runAction(user, () =>
+      api.patch(`/admin/users/${user.id}/${user.is_active ? "deactivate" : "activate"}`)
+    );
+
+  const handleDelete = (user) => {
+    if (!confirm(`Delete user "${user.name}"? This cannot be undone.`)) return;
+    runAction(
+      user,
+      () => api.delete(`/admin/users/${user.id}`),
+      `User "${user.name}" deleted.`,
+      () => {
+        setUsers((prev) => prev.filter((u) => u.id !== user.id));
+        setTotal((t) => Math.max(0, t - 1));
+      }
+    );
+  };
+
+  const tabClass = (active) =>
+    `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+      active ? "bg-brand-600 text-white shadow-sm" : "text-slate-600 hover:bg-slate-100"
+    }`;
 
   return (
-    <DashboardLayout>
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">User Management</h1>
-      <p className="mt-1 text-sm text-slate-500">Manage user accounts and admin privileges</p>
+    <AdminLayout>
+      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Manage Users</h1>
+      <p className="mt-1 text-sm text-slate-500">
+        Search accounts, change roles, and activate or deactivate users.
+      </p>
 
-      <div className="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-200">
-          <div className="relative max-w-md">
-            <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <div className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+          {ROLE_TABS.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => { setRole(t.value); setPage(1); }}
+              className={tabClass(role === t.value)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+          {STATUS_TABS.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => { setStatus(t.value); setPage(1); }}
+              className={tabClass(status === t.value)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <FiAlertCircle className="h-4 w-4 shrink-0" /> {error}
+        </div>
+      )}
+      {message && (
+        <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+          {message}
+        </div>
+      )}
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between gap-4 border-b border-slate-200 p-4">
+          <div className="relative w-full max-w-md">
+            <FiSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Search by name or email..."
-              className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+              className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
             />
           </div>
+          <p className="shrink-0 text-sm text-slate-500">{total} users</p>
         </div>
 
         <div className="overflow-x-auto">
@@ -93,60 +223,83 @@ export default function AdminUsers() {
             <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               <tr>
                 <th className="px-6 py-3">User</th>
-                <th className="px-6 py-3">Email</th>
                 <th className="px-6 py-3">Role</th>
+                <th className="px-6 py-3">Status</th>
+                <th className="px-6 py-3">Activity</th>
                 <th className="px-6 py-3">Joined</th>
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {users.length === 0 ? (
+              {loading ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-slate-500">
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-500">
+                    <FiRefreshCw className="mr-2 inline h-4 w-4 animate-spin" /> Loading…
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-slate-500">
                     No users found.
                   </td>
                 </tr>
               ) : (
                 users.map((user) => (
                   <tr key={user.id} className="transition hover:bg-slate-50">
-                    <td className="whitespace-nowrap px-6 py-4">
+                    <td className="px-6 py-4">
                       <p className="text-sm font-medium text-slate-900">{user.name}</p>
+                      <p className="text-xs text-slate-500">{user.email}</p>
+                      {user.company_profile?.company_name && (
+                        <p className="text-xs text-emerald-600">{user.company_profile.company_name}</p>
+                      )}
+                    </td>
+                    <td className="px-6 py-4">
+                      <RoleBadge user={user} />
+                    </td>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <StatusBadge active={user.is_active} />
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                      {user.email}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4">
-                      <button
-                        onClick={() => handleToggleAdmin(user)}
-                        disabled={togglingId === user.id}
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                          user.is_admin
-                            ? "bg-purple-100 text-purple-700 hover:bg-purple-200"
-                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                        }`}
-                      >
-                        {user.is_admin ? (
-                          <>
-                            <FiUserCheck className="h-3 w-3" /> Admin
-                          </>
-                        ) : (
-                          <>
-                            <FiUserX className="h-3 w-3" /> User
-                          </>
-                        )}
-                      </button>
+                      {user.is_employer
+                        ? `${user.job_listings_count ?? 0} jobs posted`
+                        : `${user.applications_count ?? 0} applications`}
                     </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-500">
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {formatDate(user.created_at)}
                     </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right">
-                      <button
-                        onClick={() => handleDelete(user.id, user.name)}
-                        disabled={deletingId === user.id}
-                        className="inline-flex items-center gap-1 text-sm text-red-600 transition hover:text-red-800 disabled:opacity-50"
-                      >
-                        <FiTrash2 className="h-4 w-4" /> Delete
-                      </button>
+                    <td className="whitespace-nowrap px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => handleToggleAdmin(user)}
+                          disabled={busyId === user.id}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
+                        >
+                          <FiShield className="h-3.5 w-3.5" />
+                          {user.is_admin ? "Remove Admin" : "Make Admin"}
+                        </button>
+                        <button
+                          onClick={() => handleToggleActive(user)}
+                          disabled={busyId === user.id}
+                          className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition disabled:opacity-50 ${
+                            user.is_active
+                              ? "border-amber-200 text-amber-700 hover:bg-amber-50"
+                              : "border-green-200 text-green-700 hover:bg-green-50"
+                          }`}
+                        >
+                          {user.is_active ? (
+                            <><FiUserX className="h-3.5 w-3.5" /> Deactivate</>
+                          ) : (
+                            <><FiUserCheck className="h-3.5 w-3.5" /> Activate</>
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user)}
+                          disabled={busyId === user.id}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+                        >
+                          <FiTrash2 className="h-3.5 w-3.5" /> Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -155,30 +308,8 @@ export default function AdminUsers() {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200">
-            <p className="text-sm text-slate-600">
-              Page {page} of {totalPages}
-            </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Previous
-              </button>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        <Pagination page={page} totalPages={totalPages} onChange={setPage} className="border-t border-slate-200 px-4 py-3" />
       </div>
-    </DashboardLayout>
+    </AdminLayout>
   );
 }

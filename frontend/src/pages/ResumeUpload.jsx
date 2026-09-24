@@ -1,7 +1,8 @@
 import DashboardLayout from "../layouts/DashboardLayout";
 import { useState } from "react";
 import api from "../services/api";
-import { FiUploadCloud } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import { FiUploadCloud, FiBookOpen, FiCheck } from "react-icons/fi";
 
 export default function ResumeUpload() {
   const [file, setFile] = useState(null);
@@ -9,11 +10,15 @@ export default function ResumeUpload() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [fileError, setFileError] = useState("");
+  const [uploadError, setUploadError] = useState("");
 
   const handleFileChange = (e) => {
     const selected = e.target.files[0];
     if (!selected) return;
-    if (selected.size > 2 * 1024 * 1024) {
+    if (selected.type && selected.type !== "application/pdf") {
+      setFileError("Please choose a PDF file.");
+      setFile(null);
+    } else if (selected.size > 2 * 1024 * 1024) {
       setFileError("File exceeds 2 MB limit. Please choose a smaller PDF.");
       setFile(null);
     } else {
@@ -24,11 +29,13 @@ export default function ResumeUpload() {
 
   const handleUpload = async () => {
     if (!file) {
-      alert("Please select a file");
+      setFileError("Please choose a PDF resume first.");
       return;
     }
 
     setLoading(true);
+    setUploadError("");
+    setResult(null);
     const formData = new FormData();
     formData.append("resume", file);
     formData.append("job", job);
@@ -40,15 +47,21 @@ export default function ResumeUpload() {
         },
       });
 
-      setResult(response.data);
+      if (response.data.analysis_failed) {
+        setUploadError(response.data.error);
+      } else {
+        setResult(response.data);
+      }
     } catch (error) {
-      console.error(error);
-      const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        "Upload failed";
-      alert("Upload failed: " + message);
+      const errors = error.response?.data?.errors;
+      setUploadError(
+        errors?.resume?.[0] ||
+          errors?.job?.[0] ||
+          error.response?.data?.error ||
+          (error.response?.status === 429
+            ? "You've analysed several resumes in a row. Please wait a minute and try again."
+            : "Upload failed. Please try again.")
+      );
     } finally {
       setLoading(false);
     }
@@ -75,15 +88,15 @@ export default function ResumeUpload() {
           <label className="mb-2 block text-sm font-medium text-slate-700">
             Select PDF Resume
           </label>
-          <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition hover:border-indigo-400 hover:bg-indigo-50/40">
-            <FiUploadCloud className="h-7 w-7 text-indigo-500" />
+          <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center transition hover:border-brand-400 hover:bg-brand-50/40">
+            <FiUploadCloud className="h-7 w-7 text-brand-500" />
             <span className="mt-2 text-sm font-medium text-slate-700">
               {file ? file.name : "Click to choose a PDF file"}
             </span>
             <span className="mt-1 text-xs text-slate-400">PDF up to 2 MB</span>
             <input
               type="file"
-              accept=".pdf"
+              accept="application/pdf,.pdf"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -97,33 +110,47 @@ export default function ResumeUpload() {
           <label className="mb-2 block text-sm font-medium text-slate-700">
             Job Description{" "}
             <span className="font-normal text-slate-400">
-              (optional — paste a job posting to get a match score)
+              (optional, paste a job posting to get a match score)
             </span>
           </label>
           <textarea
             rows={5}
             value={job}
             onChange={(e) => setJob(e.target.value)}
+            maxLength={20000}
             placeholder="Paste the job description here to see how well your resume matches..."
-            className="block w-full resize-y rounded-lg border border-slate-300 p-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+            className="block w-full resize-y rounded-lg border border-slate-300 p-3 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
           />
         </div>
 
         <button
           onClick={handleUpload}
           disabled={loading || !!fileError}
-          className="w-full rounded-lg bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="w-full rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Analyzing..." : "Upload & Analyze"}
         </button>
+
+        {uploadError && (
+          <div className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {uploadError}
+          </div>
+        )}
+
+        {result?.insufficient_text && (
+          <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            We could only read a little text from this PDF, so we can't predict a career reliably. If it's a scanned
+            image, export your resume as a text-based PDF and upload it again.
+          </div>
+        )}
 
         {result && (
           <div className="mt-8 space-y-6 border-t border-slate-200 pt-6">
             <div className="grid grid-cols-2 gap-4">
               {result.match_percentage > 0 && (
-                <div className="rounded-xl bg-indigo-50 p-4">
+                <div className="rounded-xl bg-brand-50 p-4">
                   <p className="text-sm text-slate-600">Job Match</p>
-                  <p className="text-2xl font-bold text-indigo-600">
+                  <p className="text-2xl font-bold text-brand-600">
                     {result.match_percentage}%
                   </p>
                 </div>
@@ -138,13 +165,27 @@ export default function ResumeUpload() {
 
             <Section title="Predicted Career Path">
               <div className="flex flex-wrap gap-3">
-                <span className="rounded-full bg-violet-100 px-3 py-1 text-sm font-medium text-violet-800">
-                  ML: {result.ml_predicted_career}
+                <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-800">
+                  ML: {result.ml_predicted_career ?? "Not enough text"}
+                  {result.ml_predicted_career && ` (${result.career_confidence}% confidence)`}
                 </span>
-                <span className="rounded-full bg-indigo-100 px-3 py-1 text-sm font-medium text-indigo-800">
-                  Rule: {result.rule_based_career}
+                <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-800">
+                  Rule: {result.rule_based_career ?? "No match"}
                 </span>
               </div>
+              {result.top_careers?.length > 1 && (
+                <div className="mt-3 space-y-2">
+                  {result.top_careers.map((c) => (
+                    <div key={c.career} className="flex items-center gap-3">
+                      <span className="w-44 shrink-0 truncate text-xs text-slate-600">{c.career}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-full rounded-full bg-brand-500" style={{ width: `${c.confidence}%` }} />
+                      </div>
+                      <span className="w-12 text-right text-xs font-medium text-slate-700">{c.confidence}%</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Section>
 
             <Section title="Extracted Skills">
@@ -176,7 +217,7 @@ export default function ResumeUpload() {
             )}
 
             {result.recommended_jobs?.length > 0 && (
-              <Section title="Recommended Jobs">
+              <Section title="Suggested Job Titles">
                 <div className="space-y-2">
                   {result.recommended_jobs.slice(0, 5).map((job, idx) => (
                     <div
@@ -187,11 +228,17 @@ export default function ResumeUpload() {
                         {job.title}
                       </span>
                       <span className="text-xs text-slate-500">
-                        Match: {job.score} skills
+                        Match: {job.score} skill{job.score !== 1 ? "s" : ""}
                       </span>
                     </div>
                   ))}
                 </div>
+                <Link
+                  to="/jobs?tab=recommended"
+                  className="mt-3 inline-block text-sm font-medium text-brand-600 hover:underline"
+                >
+                  See open jobs that match your skills →
+                </Link>
               </Section>
             )}
 
@@ -199,8 +246,9 @@ export default function ResumeUpload() {
               <Section title="Recommended Courses">
                 <ul className="space-y-1">
                   {result.recommended_courses.map((course, idx) => (
-                    <li key={idx} className="text-sm text-indigo-600">
-                      📚 {course}
+                    <li key={idx} className="flex items-start gap-2 text-sm text-slate-700">
+                      <FiBookOpen className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
+                      {course}
                     </li>
                   ))}
                 </ul>
@@ -215,7 +263,7 @@ export default function ResumeUpload() {
                       key={idx}
                       className="rounded-lg bg-amber-50 p-2 text-sm text-slate-700"
                     >
-                      ❓ {q}
+                      {q}
                     </li>
                   ))}
                 </ul>
@@ -230,7 +278,7 @@ export default function ResumeUpload() {
                       key={idx}
                       className="flex items-start gap-2 text-sm text-slate-600"
                     >
-                      <span className="text-green-500">✓</span>
+                      <FiCheck className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                       {suggestion}
                     </li>
                   ))}

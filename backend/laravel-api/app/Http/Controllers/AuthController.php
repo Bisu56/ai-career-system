@@ -10,6 +10,8 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
+
         $validated = $request->validate([
             'name'        => 'required|string|max:255',
             'email'       => 'required|string|email|max:255|unique:users',
@@ -45,6 +47,8 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
+        $request->merge(['email' => strtolower(trim((string) $request->input('email')))]);
+
         $credentials = $request->validate([
             'email'    => 'required|string|email',
             'password' => 'required|string',
@@ -66,6 +70,23 @@ class AuthController extends Controller
             'token' => $token,
             'user'  => $user,
         ]);
+    }
+
+    public function refresh()
+    {
+        try {
+            $token = auth('api')->refresh();
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json(['error' => 'Session expired. Please log in again.'], 401);
+        }
+
+        $user = auth('api')->setToken($token)->user();
+
+        if (!$user || !$user->is_active) {
+            return response()->json(['error' => 'Session expired. Please log in again.'], 401);
+        }
+
+        return response()->json(['token' => $token, 'user' => $user]);
     }
 
     public function me()

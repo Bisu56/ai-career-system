@@ -7,7 +7,11 @@ use App\Models\JobApplication;
 use App\Models\Resume;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
@@ -35,24 +39,36 @@ class AdminController extends Controller
             'total_applications' => JobApplication::count(),
             'total_analyses'     => Resume::count(),
             'average_score'      => round(Resume::avg('resume_score') ?? 0, 2),
+            'career_distribution' => Resume::select('career_prediction', DB::raw('count(*) as count'))
+                                        ->groupBy('career_prediction')->orderByDesc('count')->get(),
+            'jobs_by_source'     => JobListing::select('source', DB::raw('count(*) as count'))
+                                        ->groupBy('source')->get(),
+            'recent_analyses'    => Resume::with('user:id,name,email')
+                                        ->select('id', 'user_id', 'career_prediction', 'resume_score', 'created_at')
+                                        ->orderByDesc('created_at')->limit(8)->get(),
+            'recent_applications' => JobApplication::with(['user:id,name', 'job:id,title,company'])
+                                        ->orderByDesc('created_at')->limit(8)->get(),
         ]);
     }
 
     public function index(Request $request)
     {
         $this->authorizeAdmin();
-        $perPage = max(1, min(100, (int) $request->get('per_page', 15)));
-        $search  = $request->get('search', '');
-        $role    = $request->get('role', '');
-        $query   = User::with('companyProfile:id,user_id,company_name');
+        $filters = $this->listFilters($request, ['role' => 'nullable|string', 'status' => 'nullable|string', 'per_page' => 'nullable|integer']);
+        $perPage = ($filters['per_page'] ?? 0) >= 1 ? min(100, (int) $filters['per_page']) : 15;
+        $search  = $filters['search'];
+        $role    = $filters['role'] ?? '';
+        $status  = $filters['status'] ?? '';
+        $query   = User::with('companyProfile:id,user_id,company_name')
+                       ->withCount(['applications', 'jobListings']);
         if ($search !== '') {
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'LIKE', "%{$search}%")->orWhere('email', 'LIKE', "%{$search}%");
-            });
+            $query->whereContains(['name', 'email'], $search);
         }
         if ($role === 'employer')   $query->where('is_employer', true);
         elseif ($role === 'seeker') $query->where('is_employer', false)->where('is_admin', false);
         elseif ($role === 'admin')  $query->where('is_admin', true);
+        if ($status === 'active')       $query->where('is_active', true);
+        elseif ($status === 'inactive') $query->where('is_active', false);
         return response()->json($query->orderByDesc('created_at')->paginate($perPage));
     }
 
@@ -98,6 +114,8 @@ class AdminController extends Controller
         $user = User::findOrFail($id);
         if ($user->id === auth('api')->id())
             return response()->json(['error' => 'You cannot delete your own account.'], 422);
+        Resume::where('user_id', $user->id)->whereNotNull('file_path')->pluck('file_path')
+            ->each(fn ($path) => Storage::delete($path));
         $user->delete();
         return response()->json(['deleted' => true]);
     }
@@ -105,11 +123,20 @@ class AdminController extends Controller
     public function employers(Request $request)
     {
         $this->authorizeAdmin();
-        $status = $request->get('status', '');
+        $filters = $this->listFilters($request, ['status' => 'nullable|string']);
+        $status = $filters['status'] ?? '';
+        $search = $filters['search'];
         $query  = User::where('is_employer', true)
-                      ->with('companyProfile:id,user_id,company_name,location,website');
+                      ->with('companyProfile:id,user_id,company_name,description,location,website,contact_email')
+                      ->withCount('jobListings');
         if (in_array($status, ['pending', 'approved', 'rejected']))
             $query->where('employer_status', $status);
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->whereContains(['name', 'email'], $search)
+                  ->orWhereHas('companyProfile', fn ($c) => $c->whereContains(['company_name'], $search));
+            });
+        }
         return response()->json($query->orderByDesc('created_at')->paginate(15));
     }
 
@@ -132,10 +159,16 @@ class AdminController extends Controller
     public function jobs(Request $request)
     {
         $this->authorizeAdmin();
-        $status = $request->get('status', '');
+        $filters = $this->listFilters($request, ['status' => 'nullable|string', 'source' => 'nullable|string', 'q' => 'nullable|string|max:200']);
+        $status = $filters['status'] ?? '';
+        $search = trim($filters['q'] ?? '');
         $query  = JobListing::with('employer:id,name,email')->withCount('applications');
         if (in_array($status, ['pending', 'approved', 'rejected']))
             $query->where('moderation_status', $status);
+        $query->fromSource($filters['source'] ?? null);
+        if ($search !== '') {
+            $query->whereContains(['title', 'company'], $search);
+        }
         return response()->json($query->orderByDesc('created_at')->paginate(20));
     }
 
@@ -171,12 +204,74 @@ class AdminController extends Controller
         return response()->json($job->fresh()->load('employer:id,name,email'));
     }
 
+    public function destroyJob(int $id)
+    {
+        $this->authorizeAdmin();
+        $job = JobListing::findOrFail($id);
+        $job->delete();
+        return response()->json(['deleted' => true]);
+    }
+
+    public function feedStatus()
+    {
+        $this->authorizeAdmin();
+        $sources = JobListing::external()
+            ->select('source', DB::raw('count(*) as count'), DB::raw('max(updated_at) as last_imported'))
+            ->groupBy('source')->get()
+            ->map(fn ($s) => [
+                'source'        => $s->source,
+                'count'         => (int) $s->count,
+                'last_imported' => $s->last_imported ? Carbon::parse($s->last_imported, 'UTC')->toIso8601String() : null,
+            ]);
+        return response()->json([
+            'total_external' => $sources->sum('count'),
+            'sources'        => $sources,
+            'adzuna_enabled' => $this->adzunaEnabled(),
+        ]);
+    }
+
+    private function adzunaEnabled(): bool
+    {
+        return Cache::remember('adzuna_enabled', 600, function () {
+            try {
+                $response = Http::timeout(3)->get(config('services.ai.url') . '/jobs/sources');
+                return $response->ok() && (bool) $response->json('adzuna_enabled');
+            } catch (\Exception $e) {
+                return false;
+            }
+        });
+    }
+
+    private function listFilters(Request $request, array $rules): array
+    {
+        $validated = $request->validate(array_merge(['search' => 'nullable|string|max:200', 'page' => 'nullable|integer'], $rules));
+        $validated['search'] = trim($validated['search'] ?? '');
+
+        return $validated;
+    }
+
+    private function parseFeedDate($value): ?Carbon
+    {
+        if (!$value) {
+            return null;
+        }
+        try {
+            return Carbon::parse($value)->utc();
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
     public function refreshFeed(Request $request)
     {
         $this->authorizeAdmin();
-        $keyword  = $request->get('keyword', 'python');
-        $limit    = min((int) $request->get('limit', 100), 200);
-        $aiUrl    = config('services.ai.url', env('AI_SERVICE_URL', 'http://127.0.0.1:8001'));
+        $validated = $request->validate([
+            'keyword' => 'nullable|string|max:100',
+            'limit'   => 'nullable|integer|min:1|max:100',
+        ]);
+        $keyword  = trim($validated['keyword'] ?? '') ?: 'python';
+        $limit    = (int) ($validated['limit'] ?? 50);
+        $aiUrl    = config('services.ai.url');
         try {
             $response = Http::timeout(30)->get("{$aiUrl}/jobs/feed", ['keyword' => $keyword, 'limit' => $limit]);
         } catch (\Exception $e) {
@@ -187,23 +282,30 @@ class AdminController extends Controller
         $imported = 0; $skipped = 0;
         foreach ($response->json('jobs', []) as $job) {
             if (empty($job['external_id']) || empty($job['title'])) { $skipped++; continue; }
-            $existing = JobListing::where('external_id', $job['external_id'])->first();
+            $existing = JobListing::where('external_id', $job['external_id'])
+                ->when(!empty($job['url']), fn ($q) => $q->orWhere('url', $job['url']))
+                ->first();
             if ($existing && $existing->source === 'employer') { $skipped++; continue; }
-            JobListing::updateOrCreate(
-                ['external_id' => $job['external_id']],
-                [
-                    'source'            => $job['source']    ?? 'external',
-                    'title'             => $job['title'],
-                    'company'           => $job['company']   ?? 'Unknown',
-                    'url'               => $job['url']       ?? '#',
-                    'location'          => $job['location']  ?? null,
-                    'posted_at'         => $job['posted_at'] ?? null,
-                    'is_active'         => true,
-                    'moderation_status' => 'approved',
-                ]
-            );
+            $listing = $existing ?? new JobListing([
+                'external_id'       => $job['external_id'],
+                'is_active'         => true,
+                'moderation_status' => 'approved',
+            ]);
+            $listing->fill([
+                'source'    => $job['source']   ?? 'external',
+                'title'     => mb_substr($job['title'], 0, 255),
+                'company'   => mb_substr($job['company'] ?? 'Unknown', 0, 255),
+                'url'       => $job['url']      ?? '#',
+                'location'  => $job['location'] ?? null,
+                'posted_at' => $this->parseFeedDate($job['posted_at'] ?? null),
+            ])->save();
             $imported++;
         }
-        return response()->json(['imported' => $imported, 'skipped' => $skipped, 'keyword' => $keyword]);
+        return response()->json([
+            'imported'       => $imported,
+            'skipped'        => $skipped,
+            'keyword'        => $keyword,
+            'total_external' => JobListing::external()->count(),
+        ]);
     }
 }

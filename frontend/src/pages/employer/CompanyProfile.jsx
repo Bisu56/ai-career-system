@@ -120,6 +120,7 @@ export default function CompanyProfile() {
             <input
               type="text"
               name="company_name"
+              maxLength={255}
               value={form.company_name}
               onChange={handleChange}
               placeholder="Acme Corp"
@@ -136,6 +137,7 @@ export default function CompanyProfile() {
             <label className="mb-1 block text-sm font-medium text-slate-700">About the Company</label>
             <textarea
               name="description"
+              maxLength={5000}
               value={form.description}
               onChange={handleChange}
               rows={4}
@@ -153,6 +155,7 @@ export default function CompanyProfile() {
             <input
               type="text"
               name="location"
+              maxLength={255}
               value={form.location}
               onChange={handleChange}
               placeholder="Kathmandu, Nepal"
@@ -169,6 +172,7 @@ export default function CompanyProfile() {
             <input
               type="url"
               name="website"
+              maxLength={500}
               value={form.website}
               onChange={handleChange}
               placeholder="https://acmecorp.com"
@@ -185,6 +189,7 @@ export default function CompanyProfile() {
             <input
               type="email"
               name="contact_email"
+              maxLength={255}
               value={form.contact_email}
               onChange={handleChange}
               placeholder="careers@acmecorp.com"
@@ -218,7 +223,7 @@ export default function CompanyProfile() {
           <div className="space-y-2">
             <p className="text-lg font-bold text-slate-900">{profile.company_name}</p>
             {profile.location && (
-              <p className="text-sm text-slate-500">📍 {profile.location}</p>
+              <p className="text-sm text-slate-500">{profile.location}</p>
             )}
             {profile.website && (
               <a
@@ -231,7 +236,7 @@ export default function CompanyProfile() {
               </a>
             )}
             {profile.contact_email && (
-              <p className="text-sm text-slate-500">✉ {profile.contact_email}</p>
+              <p className="text-sm text-slate-500">{profile.contact_email}</p>
             )}
             {profile.description && (
               <p className="mt-2 text-sm leading-relaxed text-slate-600">{profile.description}</p>

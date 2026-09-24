@@ -67,6 +67,8 @@ return [
 
     'timezone' => 'UTC',
 
+    'local_timezone' => env('APP_LOCAL_TIMEZONE', 'Asia/Kathmandu'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { useContext, useEffect } from "react";
+import { AuthContext } from "../context/authContextValue";
 import Brand from "../components/Brand";
 import {
   FiGrid,
@@ -9,6 +9,8 @@ import {
   FiLogOut,
   FiPlusCircle,
   FiUser,
+  FiClock,
+  FiXCircle,
 } from "react-icons/fi";
 
 const navItems = [
@@ -19,8 +21,13 @@ const navItems = [
 ];
 
 export default function EmployerDashboardLayout({ children }) {
-  const { user, logout } = useContext(AuthContext);
+  const { user, refreshUser, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const isApproved = user?.employer_status === "approved";
+
+  useEffect(() => {
+    if (!isApproved) refreshUser();
+  }, [isApproved, refreshUser]);
 
   const handleLogout = async () => {
     await logout();
@@ -28,7 +35,7 @@ export default function EmployerDashboardLayout({ children }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-paper">
       <aside className="flex w-64 flex-col border-r border-slate-200 bg-white">
         <div className="px-6 py-5">
           <Brand />
@@ -82,7 +89,27 @@ export default function EmployerDashboardLayout({ children }) {
       </aside>
 
       <main className="flex-1 overflow-x-hidden p-8">
-        <div className="mx-auto max-w-5xl">{children}</div>
+        <div className="mx-auto max-w-5xl">
+          {user?.employer_status === "pending" && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <FiClock className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                Your employer account is waiting for admin approval. You can set up your company profile now.
+                Posting jobs and reviewing applicants unlock once an admin approves your account.
+              </p>
+            </div>
+          )}
+          {user?.employer_status === "rejected" && (
+            <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              <FiXCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>
+                Your employer account was not approved, so you can't post jobs. Please contact support if you think
+                this is a mistake.
+              </p>
+            </div>
+          )}
+          {children}
+        </div>
       </main>
     </div>
   );

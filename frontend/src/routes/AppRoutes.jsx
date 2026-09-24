@@ -9,11 +9,15 @@ import History from "../pages/History";
 import Jobs from "../pages/Jobs";
 import JobDetail from "../pages/JobDetail";
 import Applications from "../pages/Applications";
+import NotFound from "../pages/NotFound";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminProtectedRoute from "./AdminProtectedRoute";
 import EmployerProtectedRoute from "./EmployerProtectedRoute";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
+import AdminEmployers from "../pages/admin/AdminEmployers";
+import AdminJobs from "../pages/admin/AdminJobs";
+import AdminFeed from "../pages/admin/AdminFeed";
 
 // Employer pages
 import EmployerDashboard from "../pages/employer/EmployerDashboard";
@@ -75,6 +79,18 @@ export default function AppRoutes() {
           path="/admin/users"
           element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>}
         />
+        <Route
+          path="/admin/employers"
+          element={<AdminProtectedRoute><AdminEmployers /></AdminProtectedRoute>}
+        />
+        <Route
+          path="/admin/jobs"
+          element={<AdminProtectedRoute><AdminJobs /></AdminProtectedRoute>}
+        />
+        <Route
+          path="/admin/feed"
+          element={<AdminProtectedRoute><AdminFeed /></AdminProtectedRoute>}
+        />
 
         {/* Employer routes */}
         <Route
@@ -92,16 +108,17 @@ export default function AppRoutes() {
         {/* "new" before :id so it isn't treated as an id param */}
         <Route
           path="/employer/jobs/new"
-          element={<EmployerProtectedRoute><PostJob /></EmployerProtectedRoute>}
+          element={<EmployerProtectedRoute><PostJob key="new" /></EmployerProtectedRoute>}
         />
         <Route
           path="/employer/jobs/:id/edit"
-          element={<EmployerProtectedRoute><PostJob /></EmployerProtectedRoute>}
+          element={<EmployerProtectedRoute><PostJob key="edit" /></EmployerProtectedRoute>}
         />
         <Route
           path="/employer/jobs/:jobId/applicants"
           element={<EmployerProtectedRoute><EmployerApplicants /></EmployerProtectedRoute>}
         />
+        <Route path="*" element={<MainLayout><NotFound /></MainLayout>} />
       </Routes>
     </BrowserRouter>
   );

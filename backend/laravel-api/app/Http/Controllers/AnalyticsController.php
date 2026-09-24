@@ -23,6 +23,7 @@ class AnalyticsController extends Controller
                                     ->orderByRaw('COUNT(*) DESC')
                                     ->value('career_prediction') ?? 'N/A',
             'latest_analysis' => Resume::where('user_id', $userId)->orderByDesc('created_at')->first(),
+            'saved_jobs'      => auth('api')->user()->savedJobs()->count(),
         ]);
     }
 
