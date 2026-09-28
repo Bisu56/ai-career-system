@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CareerAI Explained</title>
+<meta name="description" content="How the CareerAI resume analysis works, the real accuracy numbers, and answers to the questions people ask about it.">
+<style>
+:root {
+  --bg: #f7f7f5;
+  --card: #ffffff;
+  --soft: #f0f1f4;
+  --text: #16181d;
+  --muted: #5b6270;
+  --faint: #8a909c;
+  --line: #e3e5ea;
+  --brand: #2e47d8;
+  --brand-soft: #eef3ff;
+  --good: #15803d;
+  --good-soft: #ecfdf3;
+  --warn: #b45309;
+  --warn-soft: #fff8eb;
+  --bar: #2e47d8;
+  --bar-track: #e6e9f2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1115;
+    --card: #171a21;
+    --soft: #1e222b;
+    --text: #e8eaef;
+    --muted: #a3a9b6;
+    --faint: #7b8290;
+    --line: #2a2f3a;
+    --brand: #8ea2ff;
+    --brand-soft: #1c2240;
+    --good: #4ade80;
+    --good-soft: #10261a;
+    --warn: #fbbf24;
+    --warn-soft: #2a2110;
+    --bar: #8ea2ff;
+    --bar-track: #262b38;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1115;
+  --card: #171a21;
+  --soft: #1e222b;
+  --text: #e8eaef;
+  --muted: #a3a9b6;
+  --faint: #7b8290;
+  --line: #2a2f3a;
+  --brand: #8ea2ff;
+  --brand-soft: #1c2240;
+  --good: #4ade80;
+  --good-soft: #10261a;
+  --warn: #fbbf24;
+  --warn-soft: #2a2110;
+  --bar: #8ea2ff;
+  --bar-track: #262b38;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.7 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--brand); }
+code { font-family: ui-monospace, Consolas, monospace; font-size: 0.88em; background: var(--soft); padding: 1px 6px; border-radius: 5px; }
+
+.top {
+  position: sticky; top: 0; z-index: 10;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.top-inner {
+  max-width: 820px; margin: 0 auto; padding: 0 20px; height: 56px;
+  display: flex; align-items: center; gap: 20px;
+}
+.brand { font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+.brand b { color: var(--brand); }
+.top nav { display: flex; gap: 16px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.top nav a { color: var(--muted); text-decoration: none; font-size: 14px; white-space: nowrap; }
+.top nav a:hover { color: var(--text); }
+.theme {
+  border: 1px solid var(--line); background: var(--card); color: var(--text);
+  border-radius: 8px; padding: 5px 10px; font: inherit; font-size: 13px; cursor: pointer; white-space: nowrap;
+}
+
+main { max-width: 820px; margin: 0 auto; padding: 48px 20px 96px; }
+.intro h1 { font-size: 38px; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 14px; }
+.intro p { font-size: 18px; color: var(--muted); margin: 0; max-width: 640px; }
+
+section { margin-top: 72px; }
+h2 { font-size: 26px; letter-spacing: -0.015em; margin: 0 0 8px; }
+.lead { color: var(--muted); margin: 0 0 24px; }
+h3 { font-size: 18px; margin: 32px 0 10px; }
+p { margin: 0 0 14px; }
+
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 36px; }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 16px; }
+.stat .num { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat .label { color: var(--muted); font-size: 14px; margin-top: 6px; line-height: 1.45; }
+.stat.hero { background: var(--brand-soft); border-color: transparent; }
+.stat.hero .num { color: var(--brand); }
+
+.steps { list-style: none; padding: 0; margin: 0; counter-reset: s; }
+.steps li {
+  counter-increment: s; position: relative;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 18px 20px 16px 64px; margin-bottom: 10px;
+}
+.steps li::before {
+  content: counter(s); position: absolute; left: 18px; top: 18px;
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--brand); color: #fff; font-weight: 700; font-size: 14px;
+  display: grid; place-items: center;
+}
+.steps h4 { margin: 0 0 4px; font-size: 16px; }
+.steps p { margin: 0; color: var(--muted); font-size: 15px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; margin: 16px 0; }
+.formula {
+  font-family: ui-monospace, Consolas, monospace; font-size: 14px;
+  background: var(--brand-soft); border-radius: 10px; padding: 12px 16px; margin: 10px 0 14px; overflow-x: auto;
+}
+.note { background: var(--warn-soft); border-radius: 12px; padding: 14px 18px; color: var(--text); font-size: 15px; margin: 16px 0; }
+.note strong { color: var(--warn); }
+.good { background: var(--good-soft); border-radius: 12px; padding: 14px 18px; font-size: 15px; margin: 16px 0; }
+.good strong { color: var(--good); }
+
+.compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+.compare .card { margin: 0; }
+.compare .big { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.compare .old .big { color: var(--faint); }
+.compare .new .big { color: var(--brand); }
+.compare .card p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.table { background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; margin: 16px 0; }
+.table-scroll { overflow-x: auto; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); background: var(--soft); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.bars { margin: 16px 0; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+.bar-row { display: grid; grid-template-columns: 190px 1fr 52px; align-items: center; gap: 12px; padding: 5px 0; font-size: 14px; }
+.bar-row .name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-row .track { height: 10px; border-radius: 99px; background: var(--bar-track); overflow: hidden; }
+.bar-row .fill { height: 100%; border-radius: 99px; background: var(--bar); }
+.bar-row .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.bar-row.low .fill { background: var(--warn); }
+.bars-legend { font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+.search { display: flex; gap: 8px; margin: 0 0 20px; }
+.search input {
+  flex: 1; padding: 12px 14px; font: inherit; font-size: 15px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text);
+}
+.search input:focus { outline: 2px solid var(--brand); outline-offset: 1px; }
+.search button {
+  border: 1px solid var(--line); background: var(--card); color: var(--text);
+  border-radius: 10px; padding: 0 14px; font: inherit; font-size: 14px; cursor: pointer;
+}
+.group-title { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--faint); margin: 28px 0 10px; }
+details { background: var(--card); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; }
+summary {
+  cursor: pointer; list-style: none; padding: 14px 18px; font-weight: 600;
+  display: flex; justify-content: space-between; gap: 16px; align-items: flex-start;
+}
+summary::-webkit-details-marker { display: none; }
+summary::after { content: "+"; color: var(--faint); font-weight: 400; font-size: 20px; line-height: 1.1; }
+details[open] summary::after { content: "\2212"; }
+details .a { padding: 0 18px 16px; color: var(--muted); }
+details .a p:last-child { margin-bottom: 0; }
+.empty { display: none; color: var(--muted); padding: 12px 0; }
+
+.refs { padding-left: 22px; margin: 0; }
+.refs li { margin-bottom: 10px; color: var(--muted); font-size: 15px; line-height: 1.6; }
+.refs li i { color: var(--text); font-style: italic; }
+.refs a { word-break: break-word; }
+
+footer { margin-top: 80px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--faint); font-size: 14px; }
+
+@media (max-width: 640px) {
+  .intro h1 { font-size: 30px; }
+  .stats { grid-template-columns: 1fr 1fr; }
+  .compare { grid-template-columns: 1fr; }
+  .bar-row { grid-template-columns: 120px 1fr 44px; font-size: 13px; }
+  .top nav { display: none; }
+}
+@media print {
+  .top, .search { display: none; }
+  body { background: #fff; }
+  details { break-inside: avoid; }
+  details .a { display: block; }
+  section { margin-top: 40px; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">Career<b>AI</b> Explained</div>
+    <nav aria-label="Sections">
+      <a href="#numbers">Numbers</a>
+      <a href="#how">How it works</a>
+      <a href="#accuracy">Accuracy</a>
+      <a href="#scores">Scores</a>
+      <a href="#data">Data</a>
+      <a href="#reference">All formulas</a>
+      <a href="#questions">Questions</a>
+      <a href="#sources">References</a>
+      <a href="#glossary">Glossary</a>
+    </nav>
+    <button class="theme" id="theme" type="button">Dark mode</button>
+  </div>
+</header>
+
+<main>
+
+<div class="intro">
+  <h1>How CareerAI reads a resume</h1>
+  <p>A plain explanation of what the AI does, the real numbers behind it, and answers to the questions people usually ask. No maths background needed.</p>
+</div>
+
+<section id="numbers" style="margin-top:40px">
+  <h2>The numbers at a glance</h2>
+  <p class="lead">Every figure below was measured on this project, not estimated.</p>
+  <div class="stats">
+    <div class="stat hero"><div class="num">86.1%</div><div class="label">Career predictions that are exactly right, on 2,603 real CVs the model never saw</div></div>
+    <div class="stat hero"><div class="num">97.8%</div><div class="label">Times the correct career is in the top 3 suggestions</div></div>
+    <div class="stat"><div class="num">55% &rarr; 86%</div><div class="label">Accuracy before and after training on real CVs</div></div>
+    <div class="stat"><div class="num">13,587</div><div class="label">Examples the model learned from, including 13,012 real CVs</div></div>
+    <div class="stat"><div class="num">25</div><div class="label">Careers it can predict, from Data Analyst to Project Manager</div></div>
+    <div class="stat"><div class="num">114</div><div class="label">Skills it recognises, plus 29 alternative spellings</div></div>
+  </div>
+</section>
+
+<section id="how">
+  <h2>How it works, step by step</h2>
+  <p class="lead">What happens between clicking "Upload" and seeing the report. It takes a few seconds.</p>
+  <ol class="steps">
+    <li><h4>Read the PDF</h4><p>The server pulls the plain text out of the PDF. Scanned photos of a resume have no real text, so the system says so instead of guessing.</p></li>
+    <li><h4>Find the skills</h4><p>It looks for 114 known skills such as Python, React, SQL or Figma, and understands common variations, so "NodeJS" counts as Node.js and "K8s" as Kubernetes. Everyday words like "react quickly" are not mistaken for skills.</p></li>
+    <li><h4>Predict the career</h4><p>A machine learning model compares the resume's words with 13,587 examples it has learned from and gives a probability for each of the 25 careers. The highest one is the prediction, and the top three are shown with their percentages.</p></li>
+    <li><h4>Score the resume and find gaps</h4><p>Each career has six core skills. The resume score is the share of those skills the resume already shows, and the missing ones become the skill gaps.</p></li>
+    <li><h4>Recommend what to do next</h4><p>It suggests courses and likely interview questions for that career, plus open jobs on the platform ranked by how many of their required skills the person already has.</p></li>
+  </ol>
+</section>
+
+<section id="accuracy">
+  <h2>How accurate is it?</h2>
+  <p class="lead">Accuracy was measured the honest way: on real resumes kept aside and never used for training.</p>
+
+  <div class="compare">
+    <div class="card old"><div class="big">55.0%</div><p>Previous version, trained on 575 small examples, some of them mislabelled.</p></div>
+    <div class="card new"><div class="big">86.1%</div><p>Current version, trained on 13,012 real CVs plus curated examples.</p></div>
+  </div>
+
+  <h3>How the test was done</h3>
+  <p>The real CVs were split into two groups before training. The model learned from 80% of them. The other 20%, which is 2,603 CVs, were hidden until the end and used only to check its answers. Because it had never seen those resumes, the score reflects how it will do on new people.</p>
+
+  <div class="table">
+    <table>
+      <tr><th>Measure</th><th>Result</th><th>What it means</th></tr>
+      <tr><td>Accuracy</td><td class="n">86.1%</td><td>The first prediction is exactly right 86 times out of 100.</td></tr>
+      <tr><td>Top 3 accuracy</td><td class="n">97.8%</td><td>The right career is almost always among the three shown.</td></tr>
+      <tr><td>Macro F1 score</td><td class="n">0.83</td><td>Average quality across all careers, counting small careers as much as big ones (1.00 would be perfect).</td></tr>
+      <tr><td>Sample resumes</td><td class="n">5 of 5</td><td>All five test resumes in the project were classified correctly.</td></tr>
+    </table>
+  </div>
+
+  <h3>Accuracy by career</h3>
+  <p>F1 score for each career on the held-out CVs. Longer is better. Orange bars are careers with very few real examples.</p>
+  <div class="bars" id="career-bars"></div>
+
+  <h3>Where it gets confused</h3>
+  <p>Most mistakes happen between careers that really do overlap, which a human recruiter might also mix up.</p>
+  <div class="table">
+    <table>
+      <tr><th>Actual career</th><th>Sometimes predicted as</th><th>Why</th></tr>
+      <tr><td>Marketing Manager</td><td>Digital Marketer</td><td>Both talk about campaigns, SEO and social media.</td></tr>
+      <tr><td>Data Scientist</td><td>Data Analyst</td><td>Both use Python, SQL and statistics.</td></tr>
+      <tr><td>Backend Developer</td><td>Software Engineer</td><td>Very similar day-to-day work.</td></tr>
+      <tr><td>Frontend Developer</td><td>Full Stack Developer</td><td>Many frontend developers also list backend skills.</td></tr>
+    </table>
+  </div>
+
+  <h3>Real results from the sample resumes</h3>
+  <div class="table">
+    <div class="table-scroll">
+      <table>
+        <tr><th>Resume</th><th>Prediction</th><th>Confidence</th><th>Resume score</th><th>Skill gaps</th></tr>
+        <tr><td>Backend developer</td><td>Backend Developer</td><td class="n">99.8%</td><td class="n">83%</td><td>git</td></tr>
+        <tr><td>Data analyst</td><td>Data Analyst</td><td class="n">93.8%</td><td class="n">83%</td><td>data visualization</td></tr>
+        <tr><td>DevOps engineer</td><td>DevOps Engineer</td><td class="n">99.9%</td><td class="n">100%</td><td>none</td></tr>
+        <tr><td>Frontend developer</td><td>Frontend Developer</td><td class="n">98.2%</td><td class="n">100%</td><td>none</td></tr>
+        <tr><td>Mixed full stack</td><td>Full Stack Developer</td><td class="n">86.0%</td><td class="n">67%</td><td>rest api, node.js</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="note"><strong>Honest limits.</strong> The real CVs come from an IT job platform, so the model is strongest for tech roles. Research Scientist, NLP Engineer and AI Specialist had fewer than 100 real examples each, so treat those predictions with more care. Financial Analyst, Research Analyst and AI Researcher rely on smaller curated data.</div>
+</section>
+
+<section id="scores">
+  <h2>How each score is calculated</h2>
+  <p class="lead">Every score is a simple, explainable formula. Nothing is hidden.</p>
+
+  <div class="card">
+    <h3 style="margin-top:0">Resume score</h3>
+    <p>How many of the predicted career's six core skills the resume shows.</p>
+    <div class="formula">resume score = skills found &divide; 6 &times; 100</div>
+    <p style="margin:0">Example: a Backend Developer resume showing 5 of the 6 core skills scores 83%.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Job match (when a job description is pasted)</h3>
+    <p>How similar the words in the resume and the job post are, after removing common words like "the" and "and". Rare, specific words such as "Laravel" count more than everyday ones.</p>
+    <div class="formula">job match = text similarity &times; 100</div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Applicant ranking (what employers see)</h3>
+    <p>Each applicant is scored right after they apply, using the resume they attached.</p>
+    <div class="formula">match score = 70% skill overlap + 30% text similarity</div>
+    <p style="margin:0">Skills carry most of the weight because they are the most objective signal. The text part rewards relevant experience and a tailored cover letter. If the AI service is ever down, it falls back to skill overlap alone so ranking still works.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Job recommendations for seekers</h3>
+    <p>Every open job is checked against the skills on the person's latest resume.</p>
+    <div class="formula">job score = required skills they have &divide; required skills &times; 100<br>+ 20 bonus when the job title matches their predicted career</div>
+  </div>
+</section>
+
+<section id="data">
+  <h2>Where the data came from</h2>
+  <p class="lead">The model learned from three sources. The largest by far is a public set of real CVs.</p>
+
+  <div class="table">
+    <div class="table-scroll">
+      <table>
+        <tr><th>Source</th><th>What it is</th><th class="n">Rows used</th><th>Licence</th></tr>
+        <tr><td><b>Djinni Recruitment Dataset</b><br><span style="color:var(--muted);font-size:13px">English candidate profiles</span></td><td>210,250 anonymised CVs posted on Djinni, a Ukrainian IT job platform, from 2020 to 2023. Released for research by Drushchak and Romanyshyn (2024).</td><td class="n">13,012</td><td>MIT</td></tr>
+        <tr><td><b>Curated examples</b><br><span style="color:var(--muted);font-size:13px">made for this project</span></td><td>Short texts built from each career's six core skills plus a role description. They cover the three careers with no real CVs.</td><td class="n">375</td><td>Project's own</td></tr>
+        <tr><td><b>Kaggle career dataset</b><br><span style="color:var(--muted);font-size:13px">"AI-based Career Recommendation System"</span></td><td>200 synthetic candidate rows (skills, interests, recommended career). This was the project's original training data, kept in <code>archive/</code>.</td><td class="n">200</td><td>Kaggle public dataset</td></tr>
+        <tr><td colspan="2"><b>Total</b></td><td class="n"><b>13,587</b></td><td></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h3>How the real CVs were turned into training data</h3>
+  <ol class="steps">
+    <li><h4>Download</h4><p>The English CV file (237 MB, 210,250 CVs) was downloaded from Hugging Face.</p></li>
+    <li><h4>Map each CV to a career</h4><p>Each CV has a role keyword (such as "JavaScript" or "Data Science") and a job title. Clear rules turn these into one of our careers. For example, a JavaScript CV titled "Full Stack Developer" becomes Full Stack Developer, and a Data Science CV titled "NLP Engineer" becomes NLP Engineer. CVs for roles outside our 25 careers, such as QA testers, HR or sales, are skipped.</p></li>
+    <li><h4>Balance the careers</h4><p>At most 700 CVs are kept per career, picked at random (reservoir sampling, seed 42), so huge groups like JavaScript developers don't drown out small ones.</p></li>
+    <li><h4>Clean the text</h4><p>The job title and CV text are joined, extra spaces are removed, the text is cut to 2,000 characters, and CVs shorter than 120 characters are dropped.</p></li>
+  </ol>
+
+  <h3>Real CVs per career</h3>
+  <div class="table">
+    <div class="table-scroll">
+      <table>
+        <tr><th>Career</th><th class="n">CVs used</th><th class="n">Available</th><th>Career</th><th class="n">CVs used</th><th class="n">Available</th></tr>
+        <tr><td>Backend Developer</td><td class="n">700</td><td class="n">19,252</td><td>Graphic Designer</td><td class="n">700</td><td class="n">4,937</td></tr>
+        <tr><td>Business Analyst</td><td class="n">700</td><td class="n">4,417</td><td>Marketing Manager</td><td class="n">700</td><td class="n">4,743</td></tr>
+        <tr><td>Cybersecurity Analyst</td><td class="n">700</td><td class="n">775</td><td>Mobile Developer</td><td class="n">700</td><td class="n">7,330</td></tr>
+        <tr><td>Data Analyst</td><td class="n">700</td><td class="n">2,268</td><td>Project Manager</td><td class="n">700</td><td class="n">16,843</td></tr>
+        <tr><td>Data Engineer</td><td class="n">700</td><td class="n">801</td><td>Software Developer</td><td class="n">700</td><td class="n">16,419</td></tr>
+        <tr><td>Data Scientist</td><td class="n">700</td><td class="n">1,842</td><td>Software Engineer</td><td class="n">700</td><td class="n">2,879</td></tr>
+        <tr><td>DevOps Engineer</td><td class="n">700</td><td class="n">5,613</td><td>UX Designer</td><td class="n">700</td><td class="n">12,592</td></tr>
+        <tr><td>Digital Marketer</td><td class="n">700</td><td class="n">5,891</td><td>ML Engineer</td><td class="n">506</td><td class="n">506</td></tr>
+        <tr><td>Frontend Developer</td><td class="n">700</td><td class="n">29,689</td><td>Embedded Systems Engineer</td><td class="n">392</td><td class="n">392</td></tr>
+        <tr><td>Full Stack Developer</td><td class="n">700</td><td class="n">8,058</td><td>AI Specialist</td><td class="n">95</td><td class="n">95</td></tr>
+        <tr><td>Research Scientist</td><td class="n">63</td><td class="n">63</td><td>NLP Engineer</td><td class="n">56</td><td class="n">56</td></tr>
+      </table>
+    </div>
+  </div>
+  <p style="color:var(--muted);font-size:14px">Financial Analyst, Research Analyst and AI Researcher have no CVs in Djinni, so they are learned from the curated and Kaggle rows only.</p>
+
+  <h3>Other data the system uses</h3>
+  <div class="table">
+    <table>
+      <tr><th>Data</th><th>Size</th><th>Where it lives</th></tr>
+      <tr><td>Skill dictionary</td><td>114 skills, 29 alternative spellings</td><td><code>skills_db.py</code></td></tr>
+      <tr><td>Career skill map</td><td>25 careers &times; 6 core skills</td><td><code>skills_db.py</code></td></tr>
+      <tr><td>Reference job titles</td><td>26 titles with 4 skills each</td><td><code>skills_db.py</code></td></tr>
+      <tr><td>Courses</td><td>5 per career, 125 total</td><td><code>courses_db.py</code></td></tr>
+      <tr><td>Interview questions</td><td>8 per career, 200 total</td><td><code>interview_questions.py</code></td></tr>
+      <tr><td>Named-entity model</td><td>spaCy <code>en_core_web_sm</code> 3.8, trained on OntoNotes 5.0</td><td>Python package</td></tr>
+      <tr><td>Live remote jobs</td><td>Imported on demand by an admin</td><td>We Work Remotely RSS, Remote OK API, Adzuna API (optional)</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="reference">
+  <h2>Every number, formula and algorithm in the system</h2>
+  <p class="lead">A complete reference, taken directly from the code. Grouped by part of the system.</p>
+
+  <h3>1. Algorithms used</h3>
+  <div class="table">
+    <div class="table-scroll">
+      <table>
+        <tr><th>Algorithm</th><th>Type</th><th>Used for</th></tr>
+        <tr><td>TF-IDF vectorisation</td><td>Text feature weighting</td><td>Turning resume and job text into numbers for the model and for similarity</td></tr>
+        <tr><td>Multinomial Logistic Regression</td><td>Supervised machine learning classifier</td><td>Predicting the career and its confidence</td></tr>
+        <tr><td>L-BFGS optimiser</td><td>Numerical optimisation</td><td>Training the Logistic Regression weights</td></tr>
+        <tr><td>Cosine similarity</td><td>Vector similarity measure</td><td>Job match percentage and 30% of applicant ranking</td></tr>
+        <tr><td>Rule-based skill overlap</td><td>Deterministic scoring</td><td>Rule-based career, resume score, skill gaps, 70% of applicant ranking</td></tr>
+        <tr><td>Regular-expression matching</td><td>Pattern matching</td><td>Finding the 114 skills and email addresses in text</td></tr>
+        <tr><td>Named-entity recognition (spaCy CNN)</td><td>Pre-trained neural NLP model</td><td>Picking out the candidate's name and organisations</td></tr>
+        <tr><td>Reservoir sampling</td><td>Random sampling</td><td>Picking a fair 700 CVs per career from the dataset</td></tr>
+        <tr><td>Stratified train/test split</td><td>Evaluation method</td><td>Holding out 20% of real CVs for an honest accuracy score</td></tr>
+        <tr><td>Linear SVM (LinearSVC)</td><td>Classifier, compared only</td><td>Benchmark: scored 86.2%, not used because it adds complexity for 0.1 points</td></tr>
+        <tr><td>SHA-1 hashing</td><td>Hash function</td><td>Short, stable IDs for imported jobs so the same job is never added twice</td></tr>
+        <tr><td>bcrypt</td><td>Password hashing</td><td>Storing passwords safely (12 rounds)</td></tr>
+        <tr><td>JWT with HMAC-SHA256</td><td>Signed tokens</td><td>Logging users in without server sessions</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h3>2. The career model</h3>
+  <div class="card">
+    <p><b>Step 1, turn text into numbers (TF-IDF).</b> For each word or two-word phrase <i>t</i> in a resume <i>d</i>:</p>
+    <div class="formula">tf(t, d) = 1 + ln(count of t in d)<br>idf(t) = ln((1 + N) &divide; (1 + df(t))) + 1<br>weight(t, d) = tf(t, d) &times; idf(t), then the whole vector is scaled to length 1</div>
+    <p><i>N</i> is the number of training texts and <i>df(t)</i> is how many of them contain <i>t</i>. Common words get a low weight, specific ones a high weight.</p>
+    <p><b>Step 2, score each career (Logistic Regression).</b> The model has a weight for every feature and career:</p>
+    <div class="formula">score_k = w_k &middot; x + b_k&nbsp;&nbsp;&nbsp;(for each of the 25 careers k)<br>P(career k) = e^score_k &divide; &Sigma; e^score_j&nbsp;&nbsp;&nbsp;(softmax, all 25 add up to 100%)</div>
+    <p style="margin:0"><b>Step 3, pick.</b> The highest probability is the prediction. The top three are shown with their percentages.</p>
+  </div>
+
+  <div class="table">
+    <table>
+      <tr><th>Setting</th><th>Value</th><th>Why</th></tr>
+      <tr><td>Word features</td><td>single words and two-word phrases</td><td>Catches phrases like "machine learning"</td></tr>
+      <tr><td>Maximum features</td><td class="n">40,000</td><td>Keeps the model small (8 MB) and fast</td></tr>
+      <tr><td>Minimum document frequency</td><td class="n">2</td><td>Ignores words seen in only one CV</td></tr>
+      <tr><td>Stop words</td><td>English list removed</td><td>Words like "the" carry no meaning</td></tr>
+      <tr><td>Sublinear term frequency</td><td>on</td><td>Repeating a word 10 times doesn't count 10 times as much</td></tr>
+      <tr><td>Regularisation strength C</td><td class="n">10</td><td>Chosen by comparing values on the test CVs</td></tr>
+      <tr><td>Class weighting</td><td>balanced</td><td>Rare careers count as much as common ones</td></tr>
+      <tr><td>Maximum training iterations</td><td class="n">2,000</td><td>Enough for the optimiser to settle</td></tr>
+      <tr><td>Train / test split</td><td>80% / 20%, stratified, seed 7</td><td>Every career is represented in the test set</td></tr>
+      <tr><td>Training rows (evaluation run)</td><td class="n">10,984</td><td>Curated + Kaggle + 80% of real CVs</td></tr>
+      <tr><td>Test rows</td><td class="n">2,603</td><td>20% of real CVs, never seen in training</td></tr>
+      <tr><td>Final model rows</td><td class="n">13,587</td><td>After testing, retrained on everything</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <p><b>Balanced class weight</b> for career <i>k</i>:</p>
+    <div class="formula">weight_k = total rows &divide; (25 &times; rows of career k)</div>
+    <p><b>How accuracy is measured:</b></p>
+    <div class="formula">accuracy = correct predictions &divide; all predictions<br>precision = correct as k &divide; all predicted as k<br>recall = correct as k &divide; all that really are k<br>F1 = 2 &times; precision &times; recall &divide; (precision + recall)<br>macro F1 = average F1 over all careers<br>top-3 accuracy = right career is among the 3 highest probabilities</div>
+    <p style="margin:0"><b>Curated examples:</b> every way of choosing 4 of a career's 6 core skills, C(6, 4) = 15, &times; 25 careers = 375 rows.</p>
+  </div>
+
+  <h3>3. Resume analysis</h3>
+  <div class="table">
+    <div class="table-scroll">
+      <table>
+        <tr><th>What</th><th>Formula or rule</th></tr>
+        <tr><td>Skill found</td><td>The skill (or one of its spellings) appears with no letter or digit directly before or after it. "R", "Express" and "Spring" must be written with a capital letter, so "react quickly" or "spring semester" don't count.</td></tr>
+        <tr><td>Not enough text</td><td>Fewer than 25 words and no skills found, so no career is predicted</td></tr>
+        <tr><td>Text length cap</td><td>First 200,000 characters of a resume or job post are read</td></tr>
+        <tr><td>Resume score</td><td>core skills found &divide; 6 &times; 100 (for the predicted career)</td></tr>
+        <tr><td>Skill gaps</td><td>the predicted career's 6 core skills minus the skills found</td></tr>
+        <tr><td>Rule-based career</td><td>the career whose 6 core skills overlap most with the skills found (first one wins a tie)</td></tr>
+        <tr><td>Job match</td><td>cosine similarity of the two TF-IDF vectors &times; 100, English stop words removed; 0 if either text has no usable words</td></tr>
+        <tr><td>Cosine similarity</td><td>(a &middot; b) &divide; (|a| &times; |b|), from 0 (nothing shared) to 1 (same words)</td></tr>
+        <tr><td>Suggested job titles</td><td>26 reference titles ranked by how many of their 4 skills the resume has</td></tr>
+        <tr><td>Resume advice band</td><td>score under 50: "needs significant improvement"; under 75: "good but can be improved"; 75 or more: "looks great"</td></tr>
+        <tr><td>Name and organisations</td><td>first PERSON entity found by spaCy; ORG entities with duplicates removed</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h3>4. Job portal scoring</h3>
+  <div class="table">
+    <div class="table-scroll">
+      <table>
+        <tr><th>What</th><th>Formula or rule</th></tr>
+        <tr><td>Applicant match score</td><td>(0.70 &times; skill ratio + 0.30 &times; text similarity) &times; 100</td></tr>
+        <tr><td>Skill ratio</td><td>required skills the applicant has &divide; required skills. Names are cleaned first: lower case, trimmed, spelling variants merged, duplicates removed.</td></tr>
+        <tr><td>No required skills on the job</td><td>score = text similarity &times; 100</td></tr>
+        <tr><td>AI service unavailable</td><td>score = skill ratio &times; 100</td></tr>
+        <tr><td>When it's scored</td><td>right after the seeker applies, using the resume attached to that application</td></tr>
+        <tr><td>Ranking</td><td>highest score first; equal scores share a rank (1, 2, 2, 4); earlier application listed first on a tie</td></tr>
+        <tr><td>Score colour</td><td>70 or more: strong (green); 40 to 69: partial (amber); under 40: weak (red)</td></tr>
+        <tr><td>Job recommendation, job lists skills</td><td>skills the seeker has &divide; required skills &times; 100</td></tr>
+        <tr><td>Job recommendation, job has no skill list</td><td>25 points per seeker skill found in the title or description, up to 100</td></tr>
+        <tr><td>Career bonus</td><td>+20 (capped at 100) when the job title contains the seeker's predicted career</td></tr>
+        <tr><td>Recommendation pool</td><td>newest 500 open jobs are checked; the top 10 are shown</td></tr>
+        <tr><td>Deadline passed</td><td>today's date in Nepal time (Asia/Kathmandu) is after the deadline date</td></tr>
+        <tr><td>Resume attached on apply</td><td>latest uploaded PDF; if none, the latest pasted-text analysis</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h3>5. Limits and validation</h3>
+  <div class="table">
+    <div class="table-scroll">
+      <table>
+        <tr><th>Field or action</th><th>Limit</th></tr>
+        <tr><td>Resume upload</td><td>PDF only, 2 MB maximum</td></tr>
+        <tr><td>Pasted resume text</td><td>200,000 characters</td></tr>
+        <tr><td>Job description to compare against</td><td>20,000 characters</td></tr>
+        <tr><td>Password</td><td>at least 8 characters, with one capital letter and one number</td></tr>
+        <tr><td>Name, email, job title, location, education</td><td>255 characters</td></tr>
+        <tr><td>Job description (employer)</td><td>10,000 characters</td></tr>
+        <tr><td>Required skills</td><td>up to 30 skills, 100 characters each, duplicates removed</td></tr>
+        <tr><td>Salary range</td><td>100 characters</td></tr>
+        <tr><td>Application deadline</td><td>a real date, not in the past</td></tr>
+        <tr><td>Cover letter</td><td>5,000 characters</td></tr>
+        <tr><td>Company description / website</td><td>5,000 / 500 characters; website must be a valid link</td></tr>
+        <tr><td>Search box and location filter</td><td>200 characters; <code>%</code> and <code>_</code> treated as normal characters</td></tr>
+        <tr><td>Job search results</td><td>20 per page</td></tr>
+        <tr><td>Admin user list</td><td>15 per page by default, up to 100</td></tr>
+        <tr><td>Admin employer list / job list</td><td>15 / 20 per page</td></tr>
+        <tr><td>External job import</td><td>1 to 100 jobs per source, keyword up to 100 characters</td></tr>
+        <tr><td>Admin search boxes</td><td>wait 300 ms after typing stops before searching</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h3>6. Security and timing</h3>
+  <div class="table">
+    <div class="table-scroll">
+      <table>
+        <tr><th>Setting</th><th>Value</th></tr>
+        <tr><td>Login token lifetime</td><td>60 minutes, refreshed automatically</td></tr>
+        <tr><td>Token refresh window</td><td>14 days (20,160 minutes)</td></tr>
+        <tr><td>Token signing</td><td>HMAC-SHA256 (HS256)</td></tr>
+        <tr><td>Password hashing</td><td>bcrypt, 12 rounds</td></tr>
+        <tr><td>Login and sign-up rate limit</td><td>10 per minute per network, 5 per minute per email</td></tr>
+        <tr><td>Resume analysis rate limit</td><td>10 per minute per user</td></tr>
+        <tr><td>Resume analysis timeout</td><td>60 seconds</td></tr>
+        <tr><td>Applicant scoring timeout</td><td>10 seconds per call</td></tr>
+        <tr><td>External job import timeout</td><td>30 seconds overall, 15 seconds per job board</td></tr>
+        <tr><td>"Adzuna enabled" check</td><td>3-second timeout, cached for 10 minutes</td></tr>
+        <tr><td>Imported job ID</td><td>first 20 characters of a SHA-1 hash of the source's own ID</td></tr>
+        <tr><td>Dashboard lists</td><td>score history: last 10 analyses; admin recent analyses and applications: 8 each</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <h3>7. Software versions</h3>
+  <div class="table">
+    <table>
+      <tr><th>Part</th><th>Technology</th></tr>
+      <tr><td>AI service</td><td>Python, FastAPI 0.141, scikit-learn 1.9.1, spaCy 3.8 with en_core_web_sm 3.8, pandas 3.0, NumPy 2.5</td></tr>
+      <tr><td>API</td><td>Laravel 12 (PHP 8.2+), tymon/jwt-auth, spatie/pdf-to-text with poppler's pdftotext, SQLite</td></tr>
+      <tr><td>Website</td><td>React 19, React Router 7, Vite 7, Tailwind CSS 4, Recharts, Axios, Geist font</td></tr>
+      <tr><td>Tests</td><td>73 Laravel tests, 21 AI tests, 45-step end-to-end check</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="questions">
+  <h2>Questions people ask</h2>
+  <p class="lead">Grouped by topic. Type to filter.</p>
+
+  <div class="search">
+    <input id="q" type="search" placeholder="Search, for example: accuracy, bias, data, ranking" aria-label="Search questions">
+    <button type="button" id="toggle-all">Open all</button>
+  </div>
+  <p class="empty" id="empty">No questions match that search.</p>
+
+  <div id="faq">
+    <div class="group-title">About the AI</div>
+
+    <details><summary>Is this real artificial intelligence?</summary><div class="a">
+      <p>Yes. The career prediction is a machine learning model that learned patterns from 13,587 examples, including 13,012 real CVs. Nobody wrote rules like "if Python then Data Scientist". It worked out which words point to which career by itself.</p>
+    </div></details>
+
+    <details><summary>What kind of model is it?</summary><div class="a">
+      <p>A Logistic Regression classifier on TF-IDF text features. In plain words: the resume is turned into a list of word weights (rare, specific words weigh more), and the model has learned how strongly each word points to each of the 25 careers. It adds these up and turns them into percentages.</p>
+    </div></details>
+
+    <details><summary>Why not use ChatGPT or a large deep learning model?</summary><div class="a">
+      <p>Three reasons. It runs entirely on our own server, so resumes are never sent to an outside company. It is fast and needs no GPU. And it was tested: a more complex model (a linear SVM) scored 86.2%, only 0.1 points higher, so the extra complexity was not worth it.</p>
+    </div></details>
+
+    <details><summary>Does it use ChatGPT or any outside AI service?</summary><div class="a">
+      <p>No. All the AI runs inside the project's own AI service. The only outside calls are to public job boards when an admin imports remote jobs.</p>
+    </div></details>
+
+    <details><summary>Where did the training data come from?</summary><div class="a">
+      <p>Mostly from the Djinni Recruitment Dataset, a public collection of 210,000 anonymised CVs from an IT job platform, released for research under the MIT licence and published at the LREC-COLING 2024 conference. We mapped 13,012 of them to our 25 careers. It is combined with 375 curated examples and 200 rows from an earlier Kaggle dataset.</p>
+    </div></details>
+
+    <details><summary>Can the model be improved further?</summary><div class="a">
+      <p>Yes. The biggest gains would come from more real CVs for the non-tech careers and the smaller ones like Research Scientist. Adding data and re-running one training command rebuilds the model and prints its new accuracy automatically.</p>
+    </div></details>
+
+    <div class="group-title">Accuracy and trust</div>
+
+    <details><summary>How accurate is it, in one sentence?</summary><div class="a">
+      <p>It picks the exact right career 86 times out of 100, and the right career is in its top three 98 times out of 100, measured on real CVs it had never seen.</p>
+    </div></details>
+
+    <details><summary>How do we know the 86% is not inflated?</summary><div class="a">
+      <p>Because the 2,603 test CVs were separated before training and never shown to the model while it learned. Testing on data the model has already seen would give a falsely high number. This was not done here.</p>
+    </div></details>
+
+    <details><summary>What happens when it is unsure?</summary><div class="a">
+      <p>It shows its top three careers with percentages, so a close call is visible. For example a mixed resume might show 86% Full Stack and 4% Data Scientist. If a resume has very little text, it refuses to guess and asks for a proper PDF instead.</p>
+    </div></details>
+
+    <details><summary>Could the AI be biased?</summary><div class="a">
+      <p>It only reads resume text and skills. It does not use names, gender, age, photos or location to predict a career or rank applicants. Bias can still come from how people describe their work, which is why the scores are advice only and a human makes every hiring decision.</p>
+    </div></details>
+
+    <details><summary>Does the AI decide who gets hired?</summary><div class="a">
+      <p>No. It sorts applicants and explains why (matched and missing skills), but every status change, from shortlisted to selected, is made by a person at the employer.</p>
+    </div></details>
+
+    <details><summary>What kinds of resumes does it struggle with?</summary><div class="a">
+      <p>Scanned image PDFs (no readable text), resumes for non-tech jobs outside the 25 careers, and resumes that list very few specific skills. It also mixes up careers that genuinely overlap, such as Marketing Manager and Digital Marketer.</p>
+    </div></details>
+
+    <div class="group-title">Scores and results</div>
+
+    <details><summary>Why is my resume score low if my resume is good?</summary><div class="a">
+      <p>The resume score only measures how many of the six core skills for the predicted career your resume mentions. It does not judge writing quality or experience. Adding the missing skills you genuinely have will raise it.</p>
+    </div></details>
+
+    <details><summary>What is the difference between the ML and rule-based career?</summary><div class="a">
+      <p>The ML career comes from the trained model reading the whole resume, and it drives the whole report. The rule-based career simply counts overlap with each career's skill list. It is shown alongside as an easy-to-explain cross-check.</p>
+    </div></details>
+
+    <details><summary>Why does the job match go down when I paste a long job post?</summary><div class="a">
+      <p>Job match compares the words in both texts. A long post with many topics your resume does not mention lowers the similarity. It is a guide to how closely your wording lines up, not a verdict.</p>
+    </div></details>
+
+    <details><summary>How are applicants ranked for employers?</summary><div class="a">
+      <p>70% comes from how many of the job's required skills the applicant has, and 30% from how similar their resume and cover letter are to the job description. The highest score is ranked first, and ties share a rank.</p>
+    </div></details>
+
+    <div class="group-title">Privacy and safety</div>
+
+    <details><summary>Where are resumes stored? Who can see them?</summary><div class="a">
+      <p>Uploaded PDFs are stored privately on the server, not in a public folder. Only the owner can download their own resume, and an employer can only see the resume a seeker attached when applying to that employer's job.</p>
+    </div></details>
+
+    <details><summary>Is resume data sent anywhere else?</summary><div class="a">
+      <p>No. Analysis happens on the project's own AI service. Nothing is sent to ChatGPT or any other outside AI provider.</p>
+    </div></details>
+
+    <details><summary>Can someone delete their data?</summary><div class="a">
+      <p>Yes. A seeker can delete any analysis, which also deletes the stored PDF. An admin can delete a whole account, which removes their resumes, applications and saved jobs.</p>
+    </div></details>
+
+    <details><summary>How is the system protected from abuse?</summary><div class="a">
+      <p>Uploads are limited to 10 per minute per user and 2 MB PDFs. Login and sign-up are limited to 10 attempts per minute per network and 5 per email. Every form is checked on the server, so bad input gets a clear error instead of breaking anything.</p>
+    </div></details>
+
+    <div class="group-title">The project</div>
+
+    <details><summary>What is the system built with?</summary><div class="a">
+      <p>Three parts: a React website, a Laravel API that handles accounts, jobs and storage, and a Python FastAPI service that runs the AI using scikit-learn and spaCy.</p>
+    </div></details>
+
+    <details><summary>How was it tested?</summary><div class="a">
+      <p>73 automated backend tests, 21 automated AI tests, and a 45-step end-to-end check that runs every feature against the live system with real PDF resumes. All of them pass.</p>
+    </div></details>
+
+    <details><summary>Where is the code?</summary><div class="a">
+      <p>On GitHub at <code>github.com/Bisu56/ai-career-system</code>. The AI lives in <code>backend/ai-service</code>, the training script is <code>train_model.py</code>, and the data builder is <code>dataset/build_djinni.py</code>.</p>
+    </div></details>
+  </div>
+</section>
+
+<section id="sources">
+  <h2>References</h2>
+  <p class="lead">The datasets, methods and tools the system is built on.</p>
+
+  <h3>Datasets</h3>
+  <ol class="refs">
+    <li>Drushchak, N. and Romanyshyn, M. (2024). <i>Introducing the Djinni Recruitment Dataset: A Corpus of Anonymized CVs and Job Postings.</i> Proceedings of the Third Ukrainian Natural Language Processing Workshop (UNLP) at LREC-COLING 2024, Torino, Italy, pp. 8&ndash;13. <a href="https://aclanthology.org/2024.unlp-1.2">aclanthology.org/2024.unlp-1.2</a></li>
+    <li>lang-uk. <i>recruitment-dataset-candidate-profiles-english</i> (Djinni English CVs, 210,250 rows, MIT licence). Hugging Face. <a href="https://huggingface.co/datasets/lang-uk/recruitment-dataset-candidate-profiles-english">huggingface.co/datasets/lang-uk/recruitment-dataset-candidate-profiles-english</a></li>
+    <li><i>AI-based Career Recommendation System</i> (200 synthetic candidate rows). Kaggle public dataset. Local copy in the project's <code>archive/</code> folder.</li>
+    <li>Weischedel, R. et al. (2013). <i>OntoNotes Release 5.0</i>, LDC2013T19. Linguistic Data Consortium. Training data for spaCy's English entity model.</li>
+  </ol>
+
+  <h3>Methods</h3>
+  <ol class="refs" start="5">
+    <li>Sp&auml;rck Jones, K. (1972). A statistical interpretation of term specificity and its application in retrieval. <i>Journal of Documentation</i>, 28(1), 11&ndash;21. (Inverse document frequency.)</li>
+    <li>Salton, G. and Buckley, C. (1988). Term-weighting approaches in automatic text retrieval. <i>Information Processing &amp; Management</i>, 24(5), 513&ndash;523. (TF-IDF weighting and cosine similarity.)</li>
+    <li>Liu, D. C. and Nocedal, J. (1989). On the limited memory BFGS method for large scale optimization. <i>Mathematical Programming</i>, 45, 503&ndash;528. (L-BFGS optimiser.)</li>
+    <li>Fan, R.-E., Chang, K.-W., Hsieh, C.-J., Wang, X.-R. and Lin, C.-J. (2008). LIBLINEAR: A library for large linear classification. <i>Journal of Machine Learning Research</i>, 9, 1871&ndash;1874. (Linear SVM benchmark.)</li>
+    <li>Vitter, J. S. (1985). Random sampling with a reservoir. <i>ACM Transactions on Mathematical Software</i>, 11(1), 37&ndash;57. (Reservoir sampling.)</li>
+    <li>van Rijsbergen, C. J. (1979). <i>Information Retrieval</i>, 2nd edition. Butterworths. (F-measure.)</li>
+  </ol>
+
+  <h3>Software</h3>
+  <ol class="refs" start="11">
+    <li>Pedregosa, F. et al. (2011). Scikit-learn: Machine learning in Python. <i>Journal of Machine Learning Research</i>, 12, 2825&ndash;2830. <a href="https://scikit-learn.org">scikit-learn.org</a></li>
+    <li>Honnibal, M., Montani, I., Van Landeghem, S. and Boyd, A. (2020). <i>spaCy: Industrial-strength Natural Language Processing in Python.</i> doi:10.5281/zenodo.1212303. <a href="https://spacy.io">spacy.io</a></li>
+    <li>Jones, M., Bradley, J. and Sakimura, N. (2015). <i>JSON Web Token (JWT)</i>, RFC 7519. IETF. <a href="https://www.rfc-editor.org/rfc/rfc7519">rfc-editor.org/rfc/rfc7519</a></li>
+    <li>Provos, N. and Mazi&egrave;res, D. (1999). A future-adaptable password scheme. <i>Proceedings of the USENIX Annual Technical Conference.</i> (bcrypt.)</li>
+    <li>FastAPI <a href="https://fastapi.tiangolo.com">fastapi.tiangolo.com</a>, Laravel <a href="https://laravel.com">laravel.com</a>, React <a href="https://react.dev">react.dev</a>, poppler <a href="https://poppler.freedesktop.org">poppler.freedesktop.org</a></li>
+  </ol>
+
+  <h3>Job sources</h3>
+  <ol class="refs" start="16">
+    <li>We Work Remotely, public RSS feed. <a href="https://weworkremotely.com/remote-jobs.rss">weworkremotely.com/remote-jobs.rss</a></li>
+    <li>Remote OK, public jobs API. <a href="https://remoteok.com/api">remoteok.com/api</a></li>
+    <li>Adzuna Jobs API (used only when API keys are configured). <a href="https://developer.adzuna.com">developer.adzuna.com</a></li>
+  </ol>
+</section>
+
+<section id="glossary">
+  <h2>Glossary</h2>
+  <p class="lead">Terms used on this page, in plain words.</p>
+  <div class="table">
+    <table>
+      <tr><th style="width:190px">Term</th><th>Meaning</th></tr>
+      <tr><td>Machine learning</td><td>Software that learns patterns from examples instead of following hand-written rules.</td></tr>
+      <tr><td>Training data</td><td>The examples the model learns from. Here, 13,587 texts labelled with a career.</td></tr>
+      <tr><td>Held-out test set</td><td>Examples hidden during training and used only to check accuracy fairly.</td></tr>
+      <tr><td>Accuracy</td><td>The share of predictions that are exactly right.</td></tr>
+      <tr><td>F1 score</td><td>A score from 0 to 1 that balances getting predictions right with not missing correct answers. Higher is better.</td></tr>
+      <tr><td>Confidence</td><td>The model's percentage for a career. 99% means it is very sure; a spread like 60% and 30% means it is torn.</td></tr>
+      <tr><td>TF-IDF</td><td>A way of weighting words so rare, specific words (like "Kubernetes") count more than common ones (like "team").</td></tr>
+      <tr><td>Text similarity</td><td>How closely two texts use the same important words, from 0% to 100%.</td></tr>
+      <tr><td>Logistic Regression</td><td>A proven, fast machine learning method that turns word weights into a probability for each career.</td></tr>
+    </table>
+  </div>
+</section>
+
+<footer>
+  CareerAI, AI career prediction and job portal. Figures measured on the trained model, September 2026.
+</footer>
+
+</main>
+
+<script>
+(function () {
+  var careers = [
+    ["Cybersecurity Analyst", 0.96], ["Embedded Systems Engineer", 0.95], ["Mobile Developer", 0.95],
+    ["DevOps Engineer", 0.93], ["Graphic Designer", 0.91], ["Frontend Developer", 0.90],
+    ["UX Designer", 0.90], ["Project Manager", 0.87], ["Data Engineer", 0.86],
+    ["Software Developer", 0.86], ["Software Engineer", 0.86], ["Business Analyst", 0.85],
+    ["ML Engineer", 0.84], ["Full Stack Developer", 0.83], ["Data Analyst", 0.81],
+    ["Marketing Manager", 0.81], ["Digital Marketer", 0.80], ["Backend Developer", 0.79],
+    ["Data Scientist", 0.76], ["NLP Engineer", 0.67, true], ["AI Specialist", 0.62, true],
+    ["Research Scientist", 0.48, true]
+  ];
+  var box = document.getElementById("career-bars");
+  careers.forEach(function (c) {
+    var row = document.createElement("div");
+    row.className = "bar-row" + (c[2] ? " low" : "");
+    row.innerHTML = '<span class="name"></span><span class="track"><span class="fill"></span></span><span class="val"></span>';
+    row.querySelector(".name").textContent = c[0];
+    row.querySelector(".fill").style.width = (c[1] * 100) + "%";
+    row.querySelector(".val").textContent = c[1].toFixed(2);
+    box.appendChild(row);
+  });
+  var legend = document.createElement("p");
+  legend.className = "bars-legend";
+  legend.textContent = "Financial Analyst, Research Analyst and AI Researcher have no real CVs in the test set, so they are not shown.";
+  box.appendChild(legend);
+
+  var root = document.documentElement;
+  var themeBtn = document.getElementById("theme");
+  function isDark() {
+    var set = root.getAttribute("data-theme");
+    return set ? set === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+  function label() { themeBtn.textContent = isDark() ? "Light mode" : "Dark mode"; }
+  try { var saved = localStorage.getItem("careerai-explained-theme"); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+  label();
+  themeBtn.addEventListener("click", function () {
+    var next = isDark() ? "light" : "dark";
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("careerai-explained-theme", next); } catch (e) {}
+    label();
+  });
+
+  var input = document.getElementById("q");
+  var items = Array.prototype.slice.call(document.querySelectorAll("#faq details"));
+  var groups = Array.prototype.slice.call(document.querySelectorAll("#faq .group-title"));
+  var empty = document.getElementById("empty");
+  input.addEventListener("input", function () {
+    var term = input.value.trim().toLowerCase();
+    var shown = 0;
+    items.forEach(function (d) {
+      var hit = !term || d.textContent.toLowerCase().indexOf(term) !== -1;
+      d.style.display = hit ? "" : "none";
+      if (hit) shown++;
+      if (term && hit) d.open = true;
+    });
+    groups.forEach(function (g) {
+      var el = g.nextElementSibling, any = false;
+      while (el && !el.classList.contains("group-title")) {
+        if (el.tagName === "DETAILS" && el.style.display !== "none") any = true;
+        el = el.nextElementSibling;
+      }
+      g.style.display = any ? "" : "none";
+    });
+    empty.style.display = shown ? "none" : "block";
+  });
+
+  var toggle = document.getElementById("toggle-all");
+  toggle.addEventListener("click", function () {
+    var open = toggle.textContent === "Open all";
+    items.forEach(function (d) { d.open = open; });
+    toggle.textContent = open ? "Close all" : "Open all";
+  });
+
+  window.addEventListener("beforeprint", function () { items.forEach(function (d) { d.open = true; }); });
+})();
+</script>
+</body>
+</html>

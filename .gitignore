@@ -26,6 +26,5 @@ backend/laravel-api/database/*.sqlite
 .vscode/
 .idea/
 
-# Cached job listings fetched from the public job APIs
-backend/ai-service/jobs_cache.json
-backend/ai-service/ai.log
+# Raw training data (download with backend/ai-service/dataset/build_djinni.py)
+backend/ai-service/dataset/raw/

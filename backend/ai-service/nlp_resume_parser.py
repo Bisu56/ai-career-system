@@ -1,20 +1,23 @@
 import re
+import subprocess
+import sys
 
 import spacy
 
-from resume_location import extract_location
+NER_ONLY = ["tagger", "parser", "lemmatizer", "attribute_ruler"]
 
 try:
-    nlp = spacy.load("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm", disable=NER_ONLY)
 except OSError:
-    import subprocess
-    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
-    nlp = spacy.load("en_core_web_sm")
+    subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_sm"], check=True)
+    nlp = spacy.load("en_core_web_sm", disable=NER_ONLY)
+
+EMAIL_PATTERN = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b')
 
 
 def extract_entities(text):
     doc = nlp(text)
-    
+
     entities = {
         "name": None,
         "emails": [],
@@ -22,17 +25,13 @@ def extract_entities(text):
         "location": None,
         "skills": []
     }
-    
-    for ent in doc.ents:
-        if ent.label_ == "PERSON":
-            entities["name"] = ent.text
-        elif ent.label_ == "ORG":
-            entities["organizations"].append(ent.text)
-    
-    entities["location"] = extract_location(text, doc)
 
-    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-    emails = re.findall(email_pattern, text)
-    entities["emails"] = emails
-    
+    for ent in doc.ents:
+        if ent.label_ == "PERSON" and entities["name"] is None:
+            entities["name"] = ent.text.strip()
+        elif ent.label_ == "ORG" and ent.text.strip() not in entities["organizations"]:
+            entities["organizations"].append(ent.text.strip())
+
+    entities["emails"] = list(dict.fromkeys(EMAIL_PATTERN.findall(text)))
+
     return entities
