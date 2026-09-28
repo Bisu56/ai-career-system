@@ -22,6 +22,7 @@ def extract_entities(text):
         "name": None,
         "emails": [],
         "organizations": [],
+        "location": None,
         "skills": []
     }
 

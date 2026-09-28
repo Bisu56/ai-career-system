@@ -7,6 +7,7 @@ import { FiGrid, FiUploadCloud, FiClock, FiBriefcase, FiLogOut, FiShield, FiUser
 const navItems = [
   { to: "/dashboard", label: "Overview", icon: FiGrid },
   { to: "/upload", label: "Upload Resume", icon: FiUploadCloud },
+  { to: "/jobs", label: "Job Portal", icon: FiBriefcase },
   { to: "/history", label: "History", icon: FiClock },
   { to: "/jobs", label: "Job Search", icon: FiBriefcase },
   { to: "/applications", label: "Applications", icon: FiFileText },

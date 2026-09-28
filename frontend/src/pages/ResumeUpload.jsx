@@ -163,6 +163,15 @@ export default function ResumeUpload() {
               </div>
             </div>
 
+            {result.location && (
+              <Section title="Location">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                  <FiMapPin className="h-3.5 w-3.5" />
+                  {result.location}
+                </span>
+              </Section>
+            )}
+
             <Section title="Predicted Career Path">
               <div className="flex flex-wrap gap-3">
                 <span className="rounded-full bg-brand-100 px-3 py-1 text-sm font-medium text-brand-800">
@@ -241,6 +250,30 @@ export default function ResumeUpload() {
                 </Link>
               </Section>
             )}
+
+            <Section title="Live Openings Matched To This Resume">
+              {jobsLoading && (
+                <p className="text-sm text-slate-500">
+                  Finding openings that match your skills...
+                </p>
+              )}
+
+              {!jobsLoading && jobsError && (
+                <p className="text-sm text-slate-500">{jobsError}</p>
+              )}
+
+              {!jobsLoading && liveJobs.length > 0 && (
+                <JobCarousel jobs={liveJobs} />
+              )}
+
+              <Link
+                to="/jobs"
+                className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-indigo-700"
+              >
+                <FiBriefcase className="h-4 w-4" />
+                Open the full job portal
+              </Link>
+            </Section>
 
             {result.recommended_courses?.length > 0 && (
               <Section title="Recommended Courses">

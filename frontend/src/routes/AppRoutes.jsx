@@ -54,6 +54,14 @@ export default function AppRoutes() {
           element={<ProtectedRoute><ResumeUpload /></ProtectedRoute>}
         />
         <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute>
+              <Jobs />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/history"
           element={<ProtectedRoute><History /></ProtectedRoute>}
         />
