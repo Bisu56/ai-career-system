@@ -25,6 +25,52 @@ except Exception as e:
         "Run 'python train_model.py' to regenerate them."
     ) from e
 
+class JobSearchRequest(BaseModel):
+    skills: list[str] = []
+    career: Optional[str] = ""
+    search: Optional[str] = ""
+    location: Optional[str] = ""
+    home_location: Optional[str] = ""
+    remote_only: bool = False
+    min_match: float = 0
+    limit: int = 30
+    refresh: bool = False
+
+    @field_validator("career", "search", "location", "home_location", mode="before")
+    @classmethod
+    def _null_to_empty(cls, v):
+        return v or ""
+
+
+class JobPostRequest(BaseModel):
+    """A job description to pull required skills out of."""
+    title: Optional[str] = ""
+    description: Optional[str] = ""
+    skills: list[str] = []
+
+    @field_validator("title", "description", mode="before")
+    @classmethod
+    def _null_to_empty(cls, v):
+        return v or ""
+
+
+class Applicant(BaseModel):
+    id: int
+    skills: list[str] = []
+    career: Optional[str] = ""
+    resume_text: Optional[str] = ""
+
+    @field_validator("career", "resume_text", mode="before")
+    @classmethod
+    def _null_to_empty(cls, v):
+        return v or ""
+
+
+class MatchRequest(BaseModel):
+    job: JobPostRequest
+    applicants: list[Applicant] = []
+
+
 class ResumeRequest(BaseModel):
     resume: str
     # Optional: tolerate null/missing job so an empty field never 422s.
@@ -175,6 +221,7 @@ def analyze(data: ResumeRequest):
 
     return {
         "match_percentage": match_percentage,
+        "location": entities.get("location"),
         "resume_score": resume_score,
         "rule_based_career": rule_based_career,
         "ml_predicted_career": ml_career,
@@ -190,6 +237,81 @@ def analyze(data: ResumeRequest):
         "resume_suggestions": suggestions
     }
 
+
+@app.post("/jobs")
+async def jobs(data: JobSearchRequest):
+    """Live listings from free job APIs, ranked against the resume's skills."""
+    jobs, meta = load_jobs(tags=data.skills, refresh=data.refresh)
+    ranked = match_jobs(
+        jobs,
+        user_skills=data.skills,
+        career=data.career,
+        search=data.search,
+        location=data.location,
+        home_location=data.home_location,
+        remote_only=data.remote_only,
+        min_match=data.min_match,
+    )
+    return {
+        "total": len(ranked),
+        "jobs": ranked[: max(1, data.limit)],
+        "sources": ["Jobicy", "Arbeitnow"],
+        "meta": meta,
+    }
+
+def job_required_skills(job):
+    """The skills a posting asks for: whatever the employer typed, plus any
+    the description mentions. Employers rarely fill the skills box completely,
+    so reading the body too keeps ranking useful either way."""
+    named = [s.strip() for s in (job.skills or []) if s.strip()]
+    detected = tag_skills(job.title, job.description)
+    # Preserve the employer's own wording and ordering first.
+    seen = {s.lower() for s in named}
+    return named + [s for s in detected if s.lower() not in seen]
+
+
+@app.post("/job-skills")
+async def job_skills(job: JobPostRequest):
+    """Skills implied by a job description - used to tag a posting on save."""
+    return {"skills": job_required_skills(job)}
+
+
+@app.post("/match")
+async def match(data: MatchRequest):
+    """Rank applicants against one job post, best fit first.
+
+    Uses the same weighted scorer as the live job listings, so a percentage
+    means the same thing to the employer and to the candidate.
+    """
+    required = job_required_skills(data.job)
+    title_words = set(re.findall(r"[a-z]+", (data.job.title or "").lower()))
+
+    ranked = []
+    for applicant in data.applicants:
+        skills = applicant.skills
+        # Fall back to reading the resume text when no skills were stored.
+        if not skills and applicant.resume_text:
+            skills = extract_skills(applicant.resume_text)
+
+        score, matched, missing = score_skill_match(required, skills)
+
+        # A candidate whose predicted career echoes the job title is a better
+        # lead than a bare skill overlap - the same nudge the job feed applies.
+        career_words = set(re.findall(r"[a-z]+", applicant.career.lower())) - {
+            "developer", "engineer", "analyst", "specialist"
+        }
+        if career_words & title_words:
+            score = min(100.0, score + 15)
+
+        ranked.append({
+            "id": applicant.id,
+            "match_percentage": round(score, 1),
+            "matched_skills": matched,
+            "missing_skills": missing[:8],
+        })
+
+    ranked.sort(key=lambda a: (a["match_percentage"], len(a["matched_skills"])), reverse=True)
+    return {"required_skills": required, "applicants": ranked}
 
 @app.get("/")
 async def root():
